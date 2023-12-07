@@ -165,3 +165,32 @@ impl Scanner {
         }
     }
 }
+
+#[cfg(test)]
+mod scanner_tests {
+
+    use crate::error_reporter::ErrorReporter;
+
+    use super::Scanner;
+    use super::TokenType::*;
+
+    #[test]
+    fn parse_string() {
+        let input = "\"test\"";
+        let mut scanner = Scanner::new(input.into());
+        let mut error_reporter = ErrorReporter::default();
+        let result = scanner.scan_tokens(&mut error_reporter);
+        let head = &result[0].token_type;
+        assert!(matches!(head, String(x) if x == "test"));
+    }
+    #[test]
+    fn parse_float() {
+        let input = "1.1";
+        let mut scanner = Scanner::new(input.into());
+        let mut error_reporter = ErrorReporter::default();
+        let result = scanner.scan_tokens(&mut error_reporter);
+        assert_eq!(result.len(), 2);
+        let head = &result[0].token_type;
+        assert!(matches!(head, Number(_)));
+    }
+}
