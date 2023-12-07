@@ -7,7 +7,7 @@ pub enum TokenType {
     Bang, BangEqual, Equal, EqualEqual, Greater, GreaterEqual, Less, LessEqual,
 
     // Literals
-    Identifier, String(String), Number,
+    Identifier, String(String), Number(f32),
 
     // Eof
     Eof

@@ -64,15 +64,13 @@ impl Scanner {
             }
             ' ' | '\r' | '\t' => Ignore,
             '"' => self.read_string(),
+            x if x.is_ascii_digit() => self.read_number(),
             _ => Error(format!("Unexpected character '{}'.", char)),
         };
 
         match token {
             TokenResult(token) => self.add_token(token),
-            Error(e) => error_reporter.error(
-                self.line,
-                e.as_str(),
-            ),
+            Error(e) => error_reporter.error(self.line, e.as_str()),
             Ignore => (),
         }
     }
@@ -115,6 +113,10 @@ impl Scanner {
         self.source.chars().nth(self.current)
     }
 
+    fn peek_next(&self) -> Option<char> {
+        self.source.chars().nth(self.current + 1)
+    }
+
     fn consume_comment(&mut self) {
         while let Some(x) = self.peek() {
             if x == '\n' {
@@ -132,16 +134,34 @@ impl Scanner {
                 Some(c) if c == '"' => break,
                 Some(c) if c == '\n' => {
                     self.line += 1;
-                    self.current +=1;
+                    self.current += 1;
                 }
-                Some(_) => self.current +=1,
+                Some(_) => self.current += 1,
                 None => {
                     return Error("Unterminated string".into());
                 }
             }
         }
-        self.current +=1; // the closing ""
-        let string = self.source[self.start + 1 .. self.current -1].to_string();
+        self.current += 1; // the closing ""
+        let string = self.source[self.start + 1..self.current - 1].to_string();
         TokenResult(TokenType::String(string))
+    }
+
+    fn read_number(&mut self) -> ScanResult {
+        while self.peek().is_some_and(|x| x.is_ascii_digit()) {
+            self.current += 1;
+        }
+        if self.peek().is_some_and(|x| x == '.')
+            && self.peek_next().is_some_and(|x| x.is_ascii_digit())
+        {
+            self.current += 1; // the .
+            while self.peek().is_some_and(|x| x.is_ascii_digit()) {
+                self.current += 1;
+            }
+        }
+        match self.source[self.start..self.current].parse::<f32>() {
+            Ok(f) => ScanResult::TokenResult(TokenType::Number(f)),
+            Err(e) => ScanResult::Error(e.to_string()),
+        }
     }
 }
