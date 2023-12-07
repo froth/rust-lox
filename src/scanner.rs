@@ -1,3 +1,5 @@
+use phf::phf_map;
+
 use crate::{
     error_reporter::ErrorReporter,
     token::{Token, TokenType},
@@ -16,6 +18,25 @@ enum ScanResult {
     Ignore,
     Error(String),
 }
+
+static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
+    "and" => TokenType::And,
+    "class" => TokenType::Class,
+    "else" => TokenType::Else,
+    "false" => TokenType::False,
+    "fun" => TokenType::Fun,
+    "for" => TokenType::For,
+    "if" => TokenType::If,
+    "nil" => TokenType::Nil,
+    "or" => TokenType::Or,
+    "print" => TokenType::Print,
+    "return" => TokenType::Return,
+    "super" => TokenType::Super,
+    "this" => TokenType::This,
+    "true" => TokenType::True,
+    "var" => TokenType::Var,
+    "while" => TokenType::While,
+};
 
 impl Scanner {
     pub fn new(source: String) -> Self {
@@ -64,7 +85,9 @@ impl Scanner {
             }
             ' ' | '\r' | '\t' => Ignore,
             '"' => self.read_string(),
-            x if x.is_ascii_digit() => self.read_number(),
+            c if c.is_ascii_digit() => self.read_number(),
+            c if c.is_ascii_alphabetic() || c == '_' => self.read_identifier(),
+
             _ => Error(format!("Unexpected character '{}'.", char)),
         };
 
@@ -164,6 +187,16 @@ impl Scanner {
             Err(e) => ScanResult::Error(e.to_string()),
         }
     }
+
+    fn read_identifier(&mut self) -> ScanResult {
+        while self.peek().is_some_and(|c| c.is_ascii_alphanumeric() || c == '_') {
+            self.current += 1;
+        }
+
+        let text = &self.source[self.start..self.current];
+        let token = KEYWORDS.get(text).cloned();
+        ScanResult::TokenResult(token.unwrap_or(TokenType::Identifier))
+    }
 }
 
 #[cfg(test)]
@@ -192,5 +225,27 @@ mod scanner_tests {
         assert_eq!(result.len(), 2);
         let head = &result[0].token_type;
         assert!(matches!(head, Number(_)));
+    }
+    #[test]
+    fn parse_identifier() {
+        let input = "variable_name";
+        let mut scanner = Scanner::new(input.into());
+        let mut error_reporter = ErrorReporter::default();
+        let result = scanner.scan_tokens(&mut error_reporter);
+        let head = &result[0];
+        let token_type = &head.token_type;
+        assert!(matches!(token_type, Identifier));
+        assert_eq!(head.lexeme, input)
+    }
+
+    #[test]
+    fn parse_for() {
+        let input = "for";
+        let mut scanner = Scanner::new(input.into());
+        let mut error_reporter = ErrorReporter::default();
+        let result = scanner.scan_tokens(&mut error_reporter);
+        let head = &result[0];
+        let token_type = &head.token_type;
+        assert!(matches!(token_type, For));
     }
 }
