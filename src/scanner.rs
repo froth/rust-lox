@@ -14,8 +14,7 @@ pub struct Scanner {
 enum ScanResult {
     TokenResult(TokenType),
     Ignore,
-    NewLine,
-    Error,
+    Error(String),
 }
 
 impl Scanner {
@@ -53,30 +52,28 @@ impl Scanner {
             }),
             '/' => {
                 if self.matches('/') {
-                    while let Some(x) = self.peek() {
-                        if x == '\n' {
-                            break;
-                        } else {
-                            self.advance();
-                        }
-                    }
+                    self.consume_comment();
                     Ignore
                 } else {
                     TokenResult(Slash)
                 }
-            },
-            '\n' => NewLine,
+            }
+            '\n' => {
+                self.line += 1;
+                Ignore
+            }
             ' ' | '\r' | '\t' => Ignore,
-            _ => Error,
+            '"' => self.read_string(),
+            _ => Error(format!("Unexpected character '{}'.", char)),
         };
 
         match token {
             TokenResult(token) => self.add_token(token),
-            Error => {
-                error_reporter.error(self.line, format!("Unexpected character.{}", char).as_str())
-            }
+            Error(e) => error_reporter.error(
+                self.line,
+                e.as_str(),
+            ),
             Ignore => (),
-            NewLine => self.line +=1
         }
     }
 
@@ -116,5 +113,35 @@ impl Scanner {
 
     fn peek(&self) -> Option<char> {
         self.source.chars().nth(self.current)
+    }
+
+    fn consume_comment(&mut self) {
+        while let Some(x) = self.peek() {
+            if x == '\n' {
+                break;
+            } else {
+                self.advance();
+            }
+        }
+    }
+
+    fn read_string(&mut self) -> ScanResult {
+        use ScanResult::*;
+        loop {
+            match self.peek() {
+                Some(c) if c == '"' => break,
+                Some(c) if c == '\n' => {
+                    self.line += 1;
+                    self.current +=1;
+                }
+                Some(_) => self.current +=1,
+                None => {
+                    return Error("Unterminated string".into());
+                }
+            }
+        }
+        self.current +=1; // the closing ""
+        let string = self.source[self.start + 1 .. self.current -1].to_string();
+        TokenResult(TokenType::String(string))
     }
 }

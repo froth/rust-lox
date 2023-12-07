@@ -5,6 +5,10 @@ pub enum TokenType {
 
     // One or two character tokens.
     Bang, BangEqual, Equal, EqualEqual, Greater, GreaterEqual, Less, LessEqual,
+
+    // Literals
+    Identifier, String(String), Number,
+
     // Eof
     Eof
 }
