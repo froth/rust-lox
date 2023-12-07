@@ -1,4 +1,3 @@
-use std::{fs, io::{self, Write}};
 
 use clap::Parser;
 use lox::Lox;

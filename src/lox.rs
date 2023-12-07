@@ -22,6 +22,8 @@ enum TokenType {
     //single character tokens.
     LeftParen, RightParen, LeftBrace, RightBrace, Comma, Dot, Minus, Plus, Semicolon, Slash, Star,
 
+    // One or two character tokens.
+    Bang, BangEqual, Equal, EqualEqual, Greater, GreaterEqual, Less, LessEqual,
     // Eof
     Eof
 }
@@ -52,6 +54,15 @@ impl Scanner {
         use TokenType::*;
         match char {
             '(' => self.add_token(LeftParen),
+            ')' => self.add_token(RightParen),
+            '{' => self.add_token(LeftBrace),
+            '}' => self.add_token(RightBrace),
+            ',' => self.add_token(Comma),
+            '.' => self.add_token(Dot),
+            '-' => self.add_token(Minus),
+            '+' => self.add_token(Plus),
+            ';' => self.add_token(Semicolon),
+            '*' => self.add_token(Star),
             _ => error_reporter.error(self.line, "Unexpected character.")
         };
     }
@@ -77,6 +88,17 @@ impl Scanner {
             self.current += 1;
         }
         char
+    }
+
+    fn matches(&mut self, expected: char) -> bool {
+        match self.source.chars().nth(self.current) {
+            Some(x) if x == expected => {
+                self.current += 1;
+                true
+            },
+            _ => false
+        }
+
     }
 }
 
