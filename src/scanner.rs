@@ -154,8 +154,8 @@ impl Scanner {
         use ScanResult::*;
         loop {
             match self.peek() {
-                Some(c) if c == '"' => break,
-                Some(c) if c == '\n' => {
+                Some('"') => break,
+                Some('\n') => {
                     self.line += 1;
                     self.current += 1;
                 }
