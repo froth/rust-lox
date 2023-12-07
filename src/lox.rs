@@ -19,9 +19,10 @@ impl Lox {
         let tokens = scanner.scan_tokens(&mut self.error_reporter);
         tokens.iter().for_each(|x| println!("{:?}", x))
     }
-    pub fn run_file(&mut self, file: String) {
+    pub fn run_file(&mut self, file: String) -> bool {
         let contents = fs::read_to_string(file).unwrap();
         self.run(contents);
+        self.error_reporter.had_error() // TODO: better error handling then boolean...
     }
 
     pub fn run_prompt(&mut self) {

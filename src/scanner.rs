@@ -1,4 +1,7 @@
-use crate::{token::{Token, TokenType}, error_reporter::ErrorReporter};
+use crate::{
+    error_reporter::ErrorReporter,
+    token::{Token, TokenType},
+};
 
 pub struct Scanner {
     source: String,
@@ -6,6 +9,13 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
+}
+
+enum ScanResult {
+    TokenResult(TokenType),
+    Ignore,
+    NewLine,
+    Error,
 }
 
 impl Scanner {
@@ -20,29 +30,64 @@ impl Scanner {
     }
 
     fn scan_token(&mut self, char: char, error_reporter: &mut ErrorReporter) {
+        use ScanResult::*;
         use TokenType::*;
-        match char {
-            '(' => self.add_token(LeftParen),
-            ')' => self.add_token(RightParen),
-            '{' => self.add_token(LeftBrace),
-            '}' => self.add_token(RightBrace),
-            ',' => self.add_token(Comma),
-            '.' => self.add_token(Dot),
-            '-' => self.add_token(Minus),
-            '+' => self.add_token(Plus),
-            ';' => self.add_token(Semicolon),
-            '*' => self.add_token(Star),
-            _ => error_reporter.error(self.line, "Unexpected character.")
+        let token = match char {
+            '(' => TokenResult(LeftParen),
+            ')' => TokenResult(RightParen),
+            '{' => TokenResult(LeftBrace),
+            '}' => TokenResult(RightBrace),
+            ',' => TokenResult(Comma),
+            '.' => TokenResult(Dot),
+            '-' => TokenResult(Minus),
+            '+' => TokenResult(Plus),
+            ';' => TokenResult(Semicolon),
+            '*' => TokenResult(Star),
+            '!' => TokenResult(if self.matches('=') { BangEqual } else { Bang }),
+            '=' => TokenResult(if self.matches('=') { EqualEqual } else { Equal }),
+            '<' => TokenResult(if self.matches('=') { LessEqual } else { Less }),
+            '>' => TokenResult(if self.matches('=') {
+                GreaterEqual
+            } else {
+                Greater
+            }),
+            '/' => {
+                if self.matches('/') {
+                    while let Some(x) = self.peek() {
+                        if x == '\n' {
+                            break;
+                        } else {
+                            self.advance();
+                        }
+                    }
+                    Ignore
+                } else {
+                    TokenResult(Slash)
+                }
+            },
+            '\n' => NewLine,
+            ' ' | '\r' | '\t' => Ignore,
+            _ => Error,
         };
+
+        match token {
+            TokenResult(token) => self.add_token(token),
+            Error => {
+                error_reporter.error(self.line, format!("Unexpected character.{}", char).as_str())
+            }
+            Ignore => (),
+            NewLine => self.line +=1
+        }
     }
 
     pub fn scan_tokens(&mut self, error_reporter: &mut ErrorReporter) -> &Vec<Token> {
         while let Some(char) = self.advance() {
-            self.start = self.current -1; //has already been advanced
+            self.start = self.current - 1; //has already been advanced
             self.scan_token(char, error_reporter)
         }
 
-        self.tokens.push(Token::new(TokenType::Eof, String::new(), self.line));
+        self.tokens
+            .push(Token::new(TokenType::Eof, String::new(), self.line));
         &self.tokens
     }
 
@@ -64,9 +109,12 @@ impl Scanner {
             Some(x) if x == expected => {
                 self.current += 1;
                 true
-            },
-            _ => false
+            }
+            _ => false,
         }
+    }
 
+    fn peek(&self) -> Option<char> {
+        self.source.chars().nth(self.current)
     }
 }

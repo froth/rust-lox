@@ -16,4 +16,7 @@ impl ErrorReporter {
     pub fn reset(&mut self) {
         self.had_error = false
     }
+    pub fn had_error(&self) -> bool {
+        self.had_error
+    }
 }
