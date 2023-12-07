@@ -6,6 +6,9 @@ use args::Args;
 
 mod args;
 mod lox;
+mod scanner;
+mod error_reporter;
+mod token;
 
 fn main() {
     let args = Args::parse();
