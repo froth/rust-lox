@@ -15,8 +15,8 @@ pub struct Lox {
 
 impl Lox {
     fn run(&mut self, source: String) {
-        let mut scanner = Scanner::new(source);
-        let tokens = scanner.scan_tokens(&mut self.error_reporter);
+        let mut scanner = Scanner::new(source, & mut self.error_reporter);
+        let tokens = scanner.scan_tokens();
         tokens.iter().for_each(|x| println!("{:?}", x))
     }
     pub fn run_file(&mut self, file: String) -> bool {

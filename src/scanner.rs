@@ -5,12 +5,13 @@ use crate::{
     token::{Token, TokenType},
 };
 
-pub struct Scanner {
+pub struct Scanner<'a> {
     source: String,
     tokens: Vec<Token>,
     start: usize,
     current: usize,
     line: usize,
+    error_reporter: &'a mut ErrorReporter,
 }
 
 enum ScanResult {
@@ -38,18 +39,19 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "while" => TokenType::While,
 };
 
-impl Scanner {
-    pub fn new(source: String) -> Self {
+impl<'a> Scanner<'a> {
+    pub fn new(source: String, e: &'a mut ErrorReporter) -> Self {
         Self {
             source,
             tokens: vec![],
             start: 0,
             current: 0,
             line: 1,
+            error_reporter: e
         }
     }
 
-    fn scan_token(&mut self, char: char, error_reporter: &mut ErrorReporter) {
+    fn scan_token(&mut self, char: char) {
         use ScanResult::*;
         use TokenType::*;
         let token = match char {
@@ -93,20 +95,20 @@ impl Scanner {
 
         match token {
             TokenResult(token) => self.add_token(token),
-            Error(e) => error_reporter.error(self.line, e.as_str()),
+            Error(e) => self.error_reporter.error(self.line, e.as_str()),
             Ignore => (),
         }
     }
 
-    pub fn scan_tokens(&mut self, error_reporter: &mut ErrorReporter) -> &Vec<Token> {
+    pub fn scan_tokens(&mut self) -> Vec<Token> {
         while let Some(char) = self.advance() {
             self.start = self.current - 1; //has already been advanced
-            self.scan_token(char, error_reporter)
+            self.scan_token(char)
         }
 
         self.tokens
             .push(Token::new(TokenType::Eof, String::new(), self.line));
-        &self.tokens
+        self.tokens.to_vec()
     }
 
     fn add_token(&mut self, token_type: TokenType) {
@@ -210,18 +212,18 @@ mod scanner_tests {
     #[test]
     fn parse_string() {
         let input = "\"test\"";
-        let mut scanner = Scanner::new(input.into());
         let mut error_reporter = ErrorReporter::default();
-        let result = scanner.scan_tokens(&mut error_reporter);
+        let mut scanner = Scanner::new(input.into(), &mut error_reporter);
+        let result = scanner.scan_tokens();
         let head = &result[0].token_type;
         assert!(matches!(head, String(x) if x == "test"));
     }
     #[test]
     fn parse_float() {
         let input = "1.1";
-        let mut scanner = Scanner::new(input.into());
         let mut error_reporter = ErrorReporter::default();
-        let result = scanner.scan_tokens(&mut error_reporter);
+        let mut scanner = Scanner::new(input.into(), &mut error_reporter);
+        let result = scanner.scan_tokens();
         assert_eq!(result.len(), 2);
         let head = &result[0].token_type;
         assert!(matches!(head, Number(_)));
@@ -229,9 +231,9 @@ mod scanner_tests {
     #[test]
     fn parse_identifier() {
         let input = "variable_name";
-        let mut scanner = Scanner::new(input.into());
         let mut error_reporter = ErrorReporter::default();
-        let result = scanner.scan_tokens(&mut error_reporter);
+        let mut scanner = Scanner::new(input.into(), &mut error_reporter);
+        let result = scanner.scan_tokens();
         let head = &result[0];
         let token_type = &head.token_type;
         assert!(matches!(token_type, Identifier));
@@ -241,9 +243,9 @@ mod scanner_tests {
     #[test]
     fn parse_for() {
         let input = "for";
-        let mut scanner = Scanner::new(input.into());
         let mut error_reporter = ErrorReporter::default();
-        let result = scanner.scan_tokens(&mut error_reporter);
+        let mut scanner = Scanner::new(input.into(), &mut error_reporter);
+        let result = scanner.scan_tokens();
         let head = &result[0];
         let token_type = &head.token_type;
         assert!(matches!(token_type, For));
