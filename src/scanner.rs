@@ -47,7 +47,7 @@ impl<'a> Scanner<'a> {
             start: 0,
             current: 0,
             line: 1,
-            error_reporter: e
+            error_reporter: e,
         }
     }
 
@@ -191,7 +191,10 @@ impl<'a> Scanner<'a> {
     }
 
     fn read_identifier(&mut self) -> ScanResult {
-        while self.peek().is_some_and(|c| c.is_ascii_alphanumeric() || c == '_') {
+        while self
+            .peek()
+            .is_some_and(|c| c.is_ascii_alphanumeric() || c == '_')
+        {
             self.current += 1;
         }
 

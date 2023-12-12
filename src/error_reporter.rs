@@ -1,5 +1,5 @@
 #[derive(Default)]
-pub struct ErrorReporter{
+pub struct ErrorReporter {
     had_error: bool,
 }
 

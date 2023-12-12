@@ -6,4 +6,3 @@ pub struct Args {
     #[arg()]
     pub file: Option<String>,
 }
-

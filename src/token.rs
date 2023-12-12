@@ -1,18 +1,52 @@
 #[derive(Debug, Clone)]
 pub enum TokenType {
     //single character tokens.
-    LeftParen, RightParen, LeftBrace, RightBrace, Comma, Dot, Minus, Plus, Semicolon, Slash, Star,
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Comma,
+    Dot,
+    Minus,
+    Plus,
+    Semicolon,
+    Slash,
+    Star,
 
     // One or two character tokens.
-    Bang, BangEqual, Equal, EqualEqual, Greater, GreaterEqual, Less, LessEqual,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
 
     // Literals
-    Identifier, String(String), Number(f32),
+    Identifier,
+    String(String),
+    Number(f32),
 
     // Keywords.
-    And, Class, Else, False, Fun, For, If, Nil, Or, Print, Return, Super, This, True, Var, While,
+    And,
+    Class,
+    Else,
+    False,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
     // Eof
-    Eof
+    Eof,
 }
 
 #[derive(Debug, Clone)]
@@ -23,5 +57,11 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, line: usize) -> Self { Self { token_type, lexeme, line } }
+    pub fn new(token_type: TokenType, lexeme: String, line: usize) -> Self {
+        Self {
+            token_type,
+            lexeme,
+            line,
+        }
+    }
 }

@@ -5,17 +5,14 @@ use std::{
 
 use crate::{error_reporter::ErrorReporter, scanner::Scanner};
 
-
 #[derive(Default)]
 pub struct Lox {
-    error_reporter: ErrorReporter
+    error_reporter: ErrorReporter,
 }
-
-
 
 impl Lox {
     fn run(&mut self, source: String) {
-        let mut scanner = Scanner::new(source, & mut self.error_reporter);
+        let mut scanner = Scanner::new(source, &mut self.error_reporter);
         let tokens = scanner.scan_tokens();
         tokens.iter().for_each(|x| println!("{:?}", x))
     }
@@ -40,5 +37,4 @@ impl Lox {
             }
         }
     }
-
 }
