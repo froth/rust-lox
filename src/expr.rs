@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use crate::token::Token;
 
+#[derive(Debug)]
 pub enum Expr {
     Binary(Box<Expr>, Token, Box<Expr>),
     Grouping(Box<Expr>),
@@ -21,6 +22,7 @@ impl Display for Expr {
 }
 
 
+#[derive(Debug)]
 pub enum Literal {
     String(String),
     Number(f32),
