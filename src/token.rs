@@ -57,10 +57,10 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, line: usize) -> Self {
+    pub fn new<S: Into<String>>(token_type: TokenType, lexeme: S, line: usize) -> Self {
         Self {
             token_type,
-            lexeme,
+            lexeme: lexeme.into(),
             line,
         }
     }
