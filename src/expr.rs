@@ -15,12 +15,11 @@ impl Display for Expr {
         match self {
             Self::Binary(left, token, right) => write!(f, "({} {} {})", token.lexeme, left, right),
             Self::Grouping(expr) => write!(f, "(group {}", expr),
-            Self::Literal(literal) =>  write!(f, "({})", literal),
+            Self::Literal(literal) => write!(f, "({})", literal),
             Self::Unary(token, right) => write!(f, "({} {})", token.lexeme, right),
         }
     }
 }
-
 
 #[derive(Debug)]
 pub enum Literal {
