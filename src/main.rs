@@ -22,7 +22,7 @@ fn main() {
             Box::new(Expr::Literal(Literal::Number(123.0))),
         )),
         Token::new(TokenType::Star, "*", 1),
-        Box::new(Expr::Grouping(Box::new(Expr::Literal(Literal::Number(45.67))))),
+        Box::new(Expr::Grouping(Box::new(Expr::Literal(Literal::String("45.67".to_string()))))),
     );
     println!("{}",expr);
     match args.file {
