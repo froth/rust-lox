@@ -128,7 +128,7 @@ mod parser_tests {
         ];
         let mut parser = Parser::new(tokens);
         let expr = parser.parse();
-        assert_matches!(expr, Expr::Literal(Literal::String(s)) if string == s);
+        assert_eq!(expr.to_string(), r#"("foo")"#);
     }
 
     #[test]
@@ -144,24 +144,7 @@ mod parser_tests {
         ];
         let mut parser = Parser::new(tokens);
         let expr = parser.parse();
-        match expr {
-            Expr::Binary(lhs, op, rhs) => {
-                assert_matches!(op.token_type, TokenType::EqualEqual);
-                assert_matches!(
-                    *lhs,
-                    Expr::Binary(
-                        _,
-                        Token {
-                            token_type: TokenType::BangEqual,
-                            ..
-                        },
-                        _
-                    )
-                );
-                assert_matches!(*rhs, Expr::Literal(Literal::String(_)));
-            }
-            _ => panic!("should be binary"),
-        }
+        assert_eq!(expr.to_string(), r#"(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#);
     }
 
     fn token(token_type: TokenType) -> Token {
