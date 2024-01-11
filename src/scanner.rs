@@ -11,7 +11,7 @@ pub struct Scanner<'a> {
     start: usize,
     current: usize,
     line: usize,
-    error_reporter: &'a mut ErrorReporter,
+    error_reporter: &'a mut dyn ErrorReporter,
 }
 
 enum ScanResult {
@@ -40,7 +40,7 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
 };
 
 impl<'a> Scanner<'a> {
-    pub fn new(source: String, e: &'a mut ErrorReporter) -> Self {
+    pub fn new(source: String, e: &'a mut dyn ErrorReporter) -> Self {
         Self {
             source,
             tokens: vec![],
@@ -207,6 +207,9 @@ impl<'a> Scanner<'a> {
 #[cfg(test)]
 mod scanner_tests {
 
+    use crate::error_reporter::testing::Logline;
+    use crate::error_reporter::testing::VectorErrorReporter;
+
     use crate::error_reporter::ErrorReporter;
 
     use super::Scanner;
@@ -215,30 +218,33 @@ mod scanner_tests {
     #[test]
     fn parse_string() {
         let input = "\"test\"";
-        let mut error_reporter = ErrorReporter::default();
+        let mut error_reporter = VectorErrorReporter::new();
         let mut scanner = Scanner::new(input.into(), &mut error_reporter);
         let result = scanner.scan_tokens();
         let head = &result[0].token_type;
+        assert!(!error_reporter.had_error());
         assert_matches!(head, String(x) if x == "test");
     }
     #[test]
     fn parse_float() {
         let input = "1.1";
-        let mut error_reporter = ErrorReporter::default();
+        let mut error_reporter = VectorErrorReporter::new();
         let mut scanner = Scanner::new(input.into(), &mut error_reporter);
         let result = scanner.scan_tokens();
         assert_eq!(result.len(), 2);
         let head = &result[0].token_type;
+        assert!(!error_reporter.had_error());
         assert_matches!(head, Number(_));
     }
     #[test]
     fn parse_identifier() {
         let input = "variable_name";
-        let mut error_reporter = ErrorReporter::default();
+        let mut error_reporter = VectorErrorReporter::new();
         let mut scanner = Scanner::new(input.into(), &mut error_reporter);
         let result = scanner.scan_tokens();
         let head = &result[0];
         let token_type = &head.token_type;
+        assert!(!error_reporter.had_error());
         assert_matches!(token_type, Identifier);
         assert_eq!(head.lexeme, input)
     }
@@ -246,11 +252,28 @@ mod scanner_tests {
     #[test]
     fn parse_for() {
         let input = "for";
-        let mut error_reporter = ErrorReporter::default();
+        let mut error_reporter = VectorErrorReporter::new();
         let mut scanner = Scanner::new(input.into(), &mut error_reporter);
         let result = scanner.scan_tokens();
         let head = &result[0];
         let token_type = &head.token_type;
+        assert!(!error_reporter.had_error());
         assert_matches!(token_type, For);
+    }
+
+    #[test]
+    fn raise_error_on_unterminated_string() {
+        let input = "\"";
+        let mut error_reporter = VectorErrorReporter::new();
+        let mut scanner = Scanner::new(input.into(), &mut error_reporter);
+        let result = scanner.scan_tokens();
+        let head = &result[0];
+        let token_type = &head.token_type;
+        assert!(error_reporter.had_error());
+        assert_eq!(
+            error_reporter.errors(),
+            &vec![(Logline::new(1, "", "Unterminated string"))]
+        );
+        assert_matches!(token_type, Eof);
     }
 }

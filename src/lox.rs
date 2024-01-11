@@ -3,20 +3,29 @@ use std::{
     io::{self, Write},
 };
 
-use crate::{error_reporter::ErrorReporter, parser::Parser, scanner::Scanner};
+use crate::{
+    error_reporter::{ConsoleErrorReporter, ErrorReporter},
+    parser::Parser,
+    scanner::Scanner,
+};
 
-#[derive(Default)]
 pub struct Lox {
-    error_reporter: ErrorReporter,
+    error_reporter: Box<dyn ErrorReporter>,
 }
 
 impl Lox {
+    pub fn new() -> Self {
+        Self {
+            error_reporter: Box::new(ConsoleErrorReporter::new()),
+        }
+    }
+
     fn run(&mut self, source: String) {
-        let mut scanner = Scanner::new(source, &mut self.error_reporter);
+        let mut scanner = Scanner::new(source, self.error_reporter.as_mut());
         let tokens = scanner.scan_tokens();
         // tokens.iter().for_each(|x| println!("{:?}", x));
         if !self.error_reporter.had_error() {
-            let mut parser = Parser::new(tokens);
+            let mut parser = Parser::new(tokens, self.error_reporter.as_mut());
             println!("{}", parser.parse());
         }
     }
