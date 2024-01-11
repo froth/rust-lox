@@ -31,7 +31,9 @@ impl Expr {
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Binary(left, token, right) => write!(f, "({} {} {})", token.token_type, left, right),
+            Self::Binary(left, token, right) => {
+                write!(f, "({} {} {})", token.token_type, left, right)
+            }
             Self::Grouping(expr) => write!(f, "(group {})", expr),
             Self::Literal(literal) => write!(f, "({})", literal),
             Self::Unary(token, right) => write!(f, "({} {})", token.lexeme, right),

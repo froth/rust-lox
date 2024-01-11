@@ -13,7 +13,7 @@ mod token;
 
 fn main() {
     let args = Args::parse();
-    let mut lox = Lox::default();
+    let mut lox = Lox::new();
     match args.file {
         Some(file) => {
             if !lox.run_file(file) {

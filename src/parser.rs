@@ -1,15 +1,21 @@
+use crate::error_reporter::ErrorReporter;
 use crate::expr::Literal::{self, Boolean};
 use crate::{expr::Expr, token::Token};
 
 use crate::token::TokenType::*;
-pub struct Parser {
+pub struct Parser<'a> {
     tokens: Vec<Token>,
     current: usize,
+    error_reporter: &'a mut dyn ErrorReporter,
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+impl<'a> Parser<'a> {
+    pub fn new(tokens: Vec<Token>, error_reporter: &'a mut dyn ErrorReporter) -> Self {
+        Self {
+            tokens,
+            current: 0,
+            error_reporter,
+        }
     }
 
     pub fn parse(&mut self) -> Expr {
@@ -113,7 +119,7 @@ impl Parser {
 mod parser_tests {
 
     use crate::{
-        expr::{Expr, Literal},
+        error_reporter::{testing::VectorErrorReporter, ErrorReporter},
         token::{Token, TokenType},
     };
 
@@ -126,8 +132,10 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
+        let mut error_reporter = VectorErrorReporter::new();
+        let mut parser = Parser::new(tokens, &mut error_reporter);
         let expr = parser.parse();
+        assert!(!error_reporter.had_error());
         assert_eq!(expr.to_string(), r#"("foo")"#);
     }
 
@@ -142,9 +150,14 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
+        let mut error_reporter = VectorErrorReporter::new();
+        let mut parser = Parser::new(tokens, &mut error_reporter);
         let expr = parser.parse();
-        assert_eq!(expr.to_string(), r#"(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#);
+        assert!(!error_reporter.had_error());
+        assert_eq!(
+            expr.to_string(),
+            r#"(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#
+        );
     }
 
     fn token(token_type: TokenType) -> Token {
