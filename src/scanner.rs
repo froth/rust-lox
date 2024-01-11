@@ -219,7 +219,7 @@ mod scanner_tests {
         let mut scanner = Scanner::new(input.into(), &mut error_reporter);
         let result = scanner.scan_tokens();
         let head = &result[0].token_type;
-        assert!(matches!(head, String(x) if x == "test"));
+        assert_matches!(head, String(x) if x == "test");
     }
     #[test]
     fn parse_float() {
@@ -229,7 +229,7 @@ mod scanner_tests {
         let result = scanner.scan_tokens();
         assert_eq!(result.len(), 2);
         let head = &result[0].token_type;
-        assert!(matches!(head, Number(_)));
+        assert_matches!(head, Number(_));
     }
     #[test]
     fn parse_identifier() {
@@ -239,7 +239,7 @@ mod scanner_tests {
         let result = scanner.scan_tokens();
         let head = &result[0];
         let token_type = &head.token_type;
-        assert!(matches!(token_type, Identifier));
+        assert_matches!(token_type, Identifier);
         assert_eq!(head.lexeme, input)
     }
 
@@ -251,6 +251,6 @@ mod scanner_tests {
         let result = scanner.scan_tokens();
         let head = &result[0];
         let token_type = &head.token_type;
-        assert!(matches!(token_type, For));
+        assert_matches!(token_type, For);
     }
 }
