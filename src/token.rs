@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, Clone)]
 pub enum TokenType {
     //single character tokens.
@@ -47,6 +49,12 @@ pub enum TokenType {
     While,
     // Eof
     Eof,
+}
+
+impl Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self) // Display in terms of debug. Antipattern?
+    }
 }
 
 #[derive(Debug, Clone)]
