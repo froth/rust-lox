@@ -270,10 +270,7 @@ mod scanner_tests {
         let head = &result[0];
         let token_type = &head.token_type;
         assert!(error_reporter.had_error());
-        assert_eq!(
-            error_reporter.errors(),
-            &vec![(Logline::new(1, "", "Unterminated string"))]
-        );
+        error_reporter.assert_first(Logline::new(1, "", "Unterminated string"));
         assert_matches!(token_type, Eof);
     }
 }

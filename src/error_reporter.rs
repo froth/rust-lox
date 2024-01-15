@@ -66,8 +66,15 @@ pub mod testing {
                 errors: Vec::new(),
             }
         }
+
         pub fn errors(&self) -> &Vec<Logline> {
             &self.errors
+        }
+        
+        pub fn assert_first(&self, expected: Logline) {
+            assert!(!self.errors.is_empty());
+            let first = self.errors.first().unwrap();
+            assert_eq!(first, &expected);
         }
     }
 
