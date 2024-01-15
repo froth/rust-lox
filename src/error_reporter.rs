@@ -72,9 +72,8 @@ pub mod testing {
         }
         
         pub fn assert_first(&self, expected: Logline) {
-            assert!(!self.errors.is_empty());
-            let first = self.errors.first().unwrap();
-            assert_eq!(first, &expected);
+            let first = self.errors.first();
+            assert_eq!(first, Some(&expected));
         }
     }
 
