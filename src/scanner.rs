@@ -1,10 +1,10 @@
 use phf::phf_map;
 
 use crate::{
+    error::ScannerError::{self, *},
     error_reporter::ErrorReporter,
     token::{Token, TokenType},
 };
-
 pub struct Scanner<'a> {
     source: String,
     tokens: Vec<Token>,
@@ -14,16 +14,10 @@ pub struct Scanner<'a> {
     error_reporter: &'a mut dyn ErrorReporter,
 }
 
-enum ScanResult {
-    TokenResult(TokenType),
-    Ignore,
-    Error(String),
-}
+pub type Result<T> = core::result::Result<T, ScannerError>;
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "and" => TokenType::And,
-    "class" => TokenType::Class,
-    "else" => TokenType::Else,
     "false" => TokenType::False,
     "fun" => TokenType::Fun,
     "for" => TokenType::For,
@@ -36,7 +30,7 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "this" => TokenType::This,
     "true" => TokenType::True,
     "var" => TokenType::Var,
-    "while" => TokenType::While,
+    "while" => TokenType::While
 };
 
 impl<'a> Scanner<'a> {
@@ -51,55 +45,6 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn scan_token(&mut self, char: char) {
-        use ScanResult::*;
-        use TokenType::*;
-        let token = match char {
-            '(' => TokenResult(LeftParen),
-            ')' => TokenResult(RightParen),
-            '{' => TokenResult(LeftBrace),
-            '}' => TokenResult(RightBrace),
-            ',' => TokenResult(Comma),
-            '.' => TokenResult(Dot),
-            '-' => TokenResult(Minus),
-            '+' => TokenResult(Plus),
-            ';' => TokenResult(Semicolon),
-            '*' => TokenResult(Star),
-            '!' => TokenResult(if self.matches('=') { BangEqual } else { Bang }),
-            '=' => TokenResult(if self.matches('=') { EqualEqual } else { Equal }),
-            '<' => TokenResult(if self.matches('=') { LessEqual } else { Less }),
-            '>' => TokenResult(if self.matches('=') {
-                GreaterEqual
-            } else {
-                Greater
-            }),
-            '/' => {
-                if self.matches('/') {
-                    self.consume_comment();
-                    Ignore
-                } else {
-                    TokenResult(Slash)
-                }
-            }
-            '\n' => {
-                self.line += 1;
-                Ignore
-            }
-            ' ' | '\r' | '\t' => Ignore,
-            '"' => self.read_string(),
-            c if c.is_ascii_digit() => self.read_number(),
-            c if c.is_ascii_alphabetic() || c == '_' => self.read_identifier(),
-
-            _ => Error(format!("Unexpected character '{}'.", char)),
-        };
-
-        match token {
-            TokenResult(token) => self.add_token(token),
-            Error(e) => self.error_reporter.error(self.line, e.as_str()),
-            Ignore => (),
-        }
-    }
-
     pub fn scan_tokens(&mut self) -> Vec<Token> {
         while let Some(char) = self.advance() {
             self.start = self.current - 1; //has already been advanced
@@ -109,6 +54,56 @@ impl<'a> Scanner<'a> {
         self.tokens
             .push(Token::new(TokenType::Eof, String::new(), self.line));
         self.tokens.to_vec()
+    }
+
+    fn scan_token(&mut self, char: char) {
+        use TokenType::*;
+        let token = match char {
+            '(' => Ok(Some(LeftParen)),
+            ')' => Ok(Some(RightParen)),
+            '{' => Ok(Some(LeftBrace)),
+            '}' => Ok(Some(RightBrace)),
+            ',' => Ok(Some(Comma)),
+            '.' => Ok(Some(Dot)),
+            '-' => Ok(Some(Minus)),
+            '+' => Ok(Some(Plus)),
+            ';' => Ok(Some(Semicolon)),
+            '*' => Ok(Some(Star)),
+            '!' => Ok(Some(if self.matches('=') { BangEqual } else { Bang })),
+            '=' => Ok(Some(if self.matches('=') { EqualEqual } else { Equal })),
+            '<' => Ok(Some(if self.matches('=') { LessEqual } else { Less })),
+            '>' => Ok(Some(if self.matches('=') {
+                GreaterEqual
+            } else {
+                Greater
+            })),
+            '/' => {
+                if self.matches('/') {
+                    self.consume_comment();
+                    Ok(None)
+                } else {
+                    Ok(Some(Slash))
+                }
+            }
+            '\n' => {
+                self.line += 1;
+                Ok(None)
+            }
+            ' ' | '\r' | '\t' => Ok(None),
+            '"' => self.read_string(),
+            c if c.is_ascii_digit() => self.read_number(),
+            c if c.is_ascii_alphabetic() || c == '_' => Ok(Some(self.read_identifier())),
+
+            _ => Err(Generic(format!("Unexpected character '{}'.", char))),
+        };
+
+        match token {
+            Ok(Some(token)) => self.add_token(token),
+            Err(e) => self
+                .error_reporter
+                .error(self.line, format!("{e:?}").as_str()), //TODO: remove format hack
+            _ => (),
+        }
     }
 
     fn add_token(&mut self, token_type: TokenType) {
@@ -152,8 +147,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
-    fn read_string(&mut self) -> ScanResult {
-        use ScanResult::*;
+    fn read_string(&mut self) -> Result<Option<TokenType>> {
         loop {
             match self.peek() {
                 Some('"') => break,
@@ -163,16 +157,16 @@ impl<'a> Scanner<'a> {
                 }
                 Some(_) => self.current += 1,
                 None => {
-                    return Error("Unterminated string".into());
+                    return Err(Static("Unterminated string"));
                 }
             }
         }
         self.current += 1; // the closing ""
         let string = self.source[self.start + 1..self.current - 1].to_string();
-        TokenResult(TokenType::String(string))
+        Ok(Some(TokenType::String(string)))
     }
 
-    fn read_number(&mut self) -> ScanResult {
+    fn read_number(&mut self) -> Result<Option<TokenType>> {
         while self.peek().is_some_and(|x| x.is_ascii_digit()) {
             self.current += 1;
         }
@@ -184,13 +178,13 @@ impl<'a> Scanner<'a> {
                 self.current += 1;
             }
         }
-        match self.source[self.start..self.current].parse::<f32>() {
-            Ok(f) => ScanResult::TokenResult(TokenType::Number(f)),
-            Err(e) => ScanResult::Error(e.to_string()),
-        }
+        let result = self.source[self.start..self.current]
+            .parse::<f32>()
+            .map(|f| Some(TokenType::Number(f)))?;
+        Ok(result)
     }
 
-    fn read_identifier(&mut self) -> ScanResult {
+    fn read_identifier(&mut self) -> TokenType {
         while self
             .peek()
             .is_some_and(|c| c.is_ascii_alphanumeric() || c == '_')
@@ -200,7 +194,7 @@ impl<'a> Scanner<'a> {
 
         let text = &self.source[self.start..self.current];
         let token = KEYWORDS.get(text).cloned();
-        ScanResult::TokenResult(token.unwrap_or(TokenType::Identifier))
+        token.unwrap_or(TokenType::Identifier)
     }
 }
 
@@ -270,7 +264,7 @@ mod scanner_tests {
         let head = &result[0];
         let token_type = &head.token_type;
         assert!(error_reporter.had_error());
-        error_reporter.assert_first(Logline::new(1, "", "Unterminated string"));
+        error_reporter.assert_first(Logline::new(1, "", "Static(\"Unterminated string\")"));
         assert_matches!(token_type, Eof);
     }
 }

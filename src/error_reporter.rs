@@ -70,7 +70,7 @@ pub mod testing {
         pub fn errors(&self) -> &Vec<Logline> {
             &self.errors
         }
-        
+
         pub fn assert_first(&self, expected: Logline) {
             let first = self.errors.first();
             assert_eq!(first, Some(&expected));
