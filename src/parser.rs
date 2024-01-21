@@ -1,20 +1,17 @@
-use crate::error_reporter::ErrorReporter;
 use crate::expr::Literal::{self, Boolean};
 use crate::{expr::Expr, token::Token};
 
 use crate::token::TokenType::*;
-pub struct Parser<'a> {
+pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-    error_reporter: &'a mut dyn ErrorReporter,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(tokens: Vec<Token>, error_reporter: &'a mut dyn ErrorReporter) -> Self {
+impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
         Self {
             tokens,
             current: 0,
-            error_reporter,
         }
     }
 
@@ -132,10 +129,8 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut error_reporter = VectorErrorReporter::new();
-        let mut parser = Parser::new(tokens, &mut error_reporter);
+        let mut parser = Parser::new(tokens);
         let expr = parser.parse();
-        assert!(!error_reporter.had_error());
         assert_eq!(expr.to_string(), r#"("foo")"#);
     }
 
@@ -150,10 +145,8 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut error_reporter = VectorErrorReporter::new();
-        let mut parser = Parser::new(tokens, &mut error_reporter);
+        let mut parser = Parser::new(tokens);
         let expr = parser.parse();
-        assert!(!error_reporter.had_error());
         assert_eq!(
             expr.to_string(),
             r#"(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#
