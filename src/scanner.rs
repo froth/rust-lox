@@ -1,19 +1,20 @@
-use miette::{NamedSource, IntoDiagnostic, Result};
+use miette::NamedSource;
 use phf::phf_map;
 
 use crate::{
-    error::ScannerError::{*},
-    error_reporter::ErrorReporter,
+    error::{
+        AccumulatedScannerErrors,
+        ScannerError::{self, *},
+    },
     token::{Token, TokenType},
 };
-pub struct Scanner<'a> {
+pub struct Scanner {
     source: String,
     filename: String,
     tokens: Vec<Token>,
     start: usize,
     current: usize,
     line: usize,
-    error_reporter: &'a mut dyn ErrorReporter,
 }
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
@@ -35,8 +36,10 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "class" => TokenType::Class,
 };
 
-impl<'a> Scanner<'a> {
-    pub fn new(source: String, filename: String, e: &'a mut dyn ErrorReporter) -> Self {
+pub type Result<T> = core::result::Result<T, ScannerError>;
+
+impl Scanner {
+    pub fn new(source: String, filename: String) -> Self {
         Self {
             source,
             filename,
@@ -44,23 +47,109 @@ impl<'a> Scanner<'a> {
             start: 0,
             current: 0,
             line: 1,
-            error_reporter: e,
         }
     }
 
-    pub fn scan_tokens(&mut self) -> Vec<Token> {
+    pub fn scan_tokens(&mut self) -> core::result::Result<Vec<Token>, AccumulatedScannerErrors> {
+        let mut scanner_errors = vec![];
         while let Some(char) = self.advance() {
             self.start = self.current - 1; //has already been advanced
-            self.scan_token(char)
+            match self.scan_token(char) {
+                Ok(Some(token)) => self.add_token(token),
+                Ok(None) => (),
+                Err(err) => scanner_errors.push(err),
+            }
         }
         self.tokens
             .push(Token::new(TokenType::Eof, String::new(), self.line));
-        self.tokens.to_vec()
+        if scanner_errors.is_empty() {
+            Ok(self.tokens.to_vec())
+        } else {
+            let scanner_errors = self.combine_unexpected_character_errors(scanner_errors);
+            Err(AccumulatedScannerErrors { scanner_errors })
+        }
     }
 
-    fn scan_token(&mut self, char: char) {
+    // Oh my... there has to be a shorter solution
+    // TODO: manual loop over into_iter and collect?
+    fn combine_unexpected_character_errors(
+        &mut self,
+        scanner_errors: Vec<ScannerError>,
+    ) -> Vec<ScannerError> {
+        scanner_errors
+            .into_iter()
+            .fold(Vec::<ScannerError>::new(), |mut acc, e| {
+                match acc.last() {
+                    Some(last_error) => {
+                        if let (
+                            UnexpectedCharacter {
+                                char,
+                                src: _,
+                                location,
+                            },
+                            UnexpectedCharacter {
+                                char: new_char,
+                                src: _,
+                                location: new_location,
+                            },
+                        ) = (last_error, &e)
+                        {
+                            if location.offset() + location.len() == new_location.offset() {
+                                let location =
+                                    (location.offset(), location.len() + new_location.len()).into();
+                                let new = UnexpectedCharacters {
+                                    chars: [*char, *new_char].iter().collect(),
+                                    src: self.named_source(),
+                                    location,
+                                };
+                                if let Some(x) = acc.last_mut() {
+                                    *x = new;
+                                }
+                            } else {
+                                acc.push(e)
+                            }
+                        } else if let (
+                            UnexpectedCharacters {
+                                chars,
+                                src: _,
+                                location,
+                            },
+                            UnexpectedCharacter {
+                                char: new_char,
+                                src: _,
+                                location: new_location,
+                            },
+                        ) = (last_error, &e)
+                        {
+                            if location.offset() + location.len() == new_location.offset() {
+                                let location =
+                                    (location.offset(), location.len() + new_location.len()).into();
+                                let mut chars = chars.to_string();
+                                chars.push(*new_char);
+                                let new = UnexpectedCharacters {
+                                    chars,
+                                    src: self.named_source(),
+                                    location,
+                                };
+                                if let Some(x) = acc.last_mut() {
+                                    *x = new;
+                                }
+                            } else {
+                                acc.push(e)
+                            }
+                        } else {
+                            acc.push(e)
+                        }
+                    }
+                    _ => acc.push(e),
+                }
+                acc
+            })
+    }
+
+    fn scan_token(&mut self, char: char) -> Result<Option<TokenType>> {
         use TokenType::*;
-        let token = match char {
+        match char {
             '(' => Ok(Some(LeftParen)),
             ')' => Ok(Some(RightParen)),
             '{' => Ok(Some(LeftBrace)),
@@ -96,15 +185,11 @@ impl<'a> Scanner<'a> {
             c if c.is_ascii_digit() => self.read_number(),
             c if c.is_ascii_alphabetic() || c == '_' => Ok(Some(self.read_identifier())),
 
-            _ => Err(Generic(format!("Unexpected character '{}'.", char))).into_diagnostic(), // TODO: miette
-        };
-
-        match token {
-            Ok(Some(token)) => self.add_token(token),
-            Err(e) => self
-                .error_reporter
-                .error(self.line, format!("{e:?}").as_str()), //TODO: remove format hack
-            _ => (),
+            _ => Err(UnexpectedCharacter {
+                char,
+                src: self.named_source(),
+                location: (self.current - 1, 1).into(),
+            }),
         }
     }
 
@@ -159,12 +244,10 @@ impl<'a> Scanner<'a> {
                     self.current += 1;
                 }
                 Some(_) => self.current += 1,
-                None => 
-                    Err(NonTerminatedString {
-                        src: self.named_source(),
-                        location: (start -1, self.current - start).into(),
-                    })?
-                
+                None => Err(NonTerminatedString {
+                    src: self.named_source(),
+                    location: (start - 1, self.current - start + 1).into(),
+                })?,
             }
         }
         self.current += 1; // the closing ""
@@ -186,7 +269,6 @@ impl<'a> Scanner<'a> {
         }
         let result = self.source[self.start..self.current]
             .parse::<f32>()
-            .into_diagnostic()// TODO: miette
             .map(|f| Some(TokenType::Number(f)))?;
         Ok(result)
     }
@@ -203,7 +285,7 @@ impl<'a> Scanner<'a> {
         let token = KEYWORDS.get(text).cloned();
         token.unwrap_or(TokenType::Identifier)
     }
-    
+
     fn named_source(&self) -> NamedSource {
         NamedSource::new(self.filename.clone(), self.source.to_string())
     }
@@ -213,9 +295,8 @@ impl<'a> Scanner<'a> {
 mod scanner_tests {
 
     use std::string::String;
-    use crate::error_reporter::testing::VectorErrorReporter;
 
-    use crate::error_reporter::ErrorReporter;
+    use crate::error::ScannerError;
 
     use super::Scanner;
     use super::TokenType::*;
@@ -223,33 +304,27 @@ mod scanner_tests {
     #[test]
     fn parse_string() {
         let input = "\"test\"";
-        let mut error_reporter = VectorErrorReporter::new();
-        let mut scanner = Scanner::new(input.into(), String::new(), &mut error_reporter);
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let result = scanner.scan_tokens().unwrap();
         let head = &result[0].token_type;
-        assert!(!error_reporter.had_error());
         assert_matches!(head, String(x) if x == "test");
     }
     #[test]
     fn parse_float() {
         let input = "1.1";
-        let mut error_reporter = VectorErrorReporter::new();
-        let mut scanner = Scanner::new(input.into(), String::new(), &mut error_reporter);
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let result = scanner.scan_tokens().unwrap();
         assert_eq!(result.len(), 2);
         let head = &result[0].token_type;
-        assert!(!error_reporter.had_error());
         assert_matches!(head, Number(_));
     }
     #[test]
     fn parse_identifier() {
         let input = "variable_name";
-        let mut error_reporter = VectorErrorReporter::new();
-        let mut scanner = Scanner::new(input.into(), String::new(), &mut error_reporter);
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let result = scanner.scan_tokens().unwrap();
         let head = &result[0];
         let token_type = &head.token_type;
-        assert!(!error_reporter.had_error());
         assert_matches!(token_type, Identifier);
         assert_eq!(head.lexeme, input)
     }
@@ -257,25 +332,66 @@ mod scanner_tests {
     #[test]
     fn parse_for() {
         let input = "for";
-        let mut error_reporter = VectorErrorReporter::new();
-        let mut scanner = Scanner::new(input.into(), String::new(), &mut error_reporter);
-        let result = scanner.scan_tokens();
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let result = scanner.scan_tokens().unwrap();
         let head = &result[0];
         let token_type = &head.token_type;
-        assert!(!error_reporter.had_error());
         assert_matches!(token_type, For);
     }
 
     #[test]
     fn raise_error_on_unterminated_string() {
-        let input = "\"";
-        let mut error_reporter = VectorErrorReporter::new();
-        let mut scanner = Scanner::new(input.into(), String::new(), &mut error_reporter);
-        let result = scanner.scan_tokens();
-        let head = &result[0];
-        let token_type = &head.token_type;
-        assert!(error_reporter.had_error());
-        // error_reporter.assert_first(Logline::new(1, "", "Static(\"Unterminated string\")")); // TODO: reenable once ErrorReporter has vanished
-        assert_matches!(token_type, Eof);
+        let input = "1+1; \"12345";
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let acc = scanner.scan_tokens().unwrap_err();
+        let result = acc.scanner_errors.first().unwrap();
+        assert_matches!(result, ScannerError::NonTerminatedString {
+             src,
+             location,
+         } if src.name() == "" && *location == (5,6).into())
+    }
+
+    #[test]
+    fn raise_error_on_unexpected_char() {
+        let input = "^";
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let acc = scanner.scan_tokens().unwrap_err();
+        let result = acc.scanner_errors.first().unwrap();
+        assert_matches!(result, ScannerError::UnexpectedCharacter {
+             char: '^',
+             src,
+             location,
+         } if src.name() == "" && *location == (0,1).into())
+    }
+    #[test]
+    fn combine_unexpected_chars() {
+        let input = "^^^^";
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let acc = scanner.scan_tokens().unwrap_err();
+        let result = acc.scanner_errors.first().unwrap();
+        assert_matches!(result, ScannerError::UnexpectedCharacters {
+             chars,
+             src,
+             location,
+         } if chars == "^^^^" && src.name() == "" && *location == (0,4).into())
+    }
+
+    #[test]
+    fn combine_unexpected_chars_only_if_offsets_overlap() {
+        let input = "^^ @@";
+        let mut scanner = Scanner::new(input.into(), String::new());
+        let acc = scanner.scan_tokens().unwrap_err();
+        let result1 = acc.scanner_errors.first().unwrap();
+        let result2 = acc.scanner_errors.get(1).unwrap();
+        assert_matches!(result1, ScannerError::UnexpectedCharacters {
+             chars,
+             src,
+             location,
+         } if chars == "^^" && src.name() == "" && *location == (0,2).into());
+        assert_matches!(result2, ScannerError::UnexpectedCharacters {
+             chars,
+             src,
+             location,
+         } if chars == "@@" && src.name() == "" && *location == (3,2).into());
     }
 }

@@ -9,10 +9,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self {
-            tokens,
-            current: 0,
-        }
+        Self { tokens, current: 0 }
     }
 
     pub fn parse(&mut self) -> Expr {
@@ -115,10 +112,7 @@ impl Parser {
 #[cfg(test)]
 mod parser_tests {
 
-    use crate::{
-        error_reporter::{testing::VectorErrorReporter, ErrorReporter},
-        token::{Token, TokenType},
-    };
+    use crate::token::{Token, TokenType};
 
     use super::Parser;
 
