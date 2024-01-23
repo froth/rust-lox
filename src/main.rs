@@ -5,7 +5,6 @@ use args::Args;
 
 mod args;
 mod error;
-mod error_reporter;
 mod expr;
 mod lox;
 mod parser;
@@ -15,14 +14,17 @@ mod token;
 fn main() {
     let args = Args::parse();
     let mut lox = Lox::new();
-    match args.file {
-        Some(file) => {
-            if !lox.run_file(file) {
-                std::process::exit(65)
-            }
-        }
+    let result = match args.file {
+        Some(file) => lox.run_file(file),
         None => lox.run_prompt(),
-    }
+    };
+    match result {
+        Ok(_) => (),
+        Err(err) => {
+            eprintln!("{:?}", err);
+            std::process::exit(65)
+        }
+    };
 }
 
 #[cfg(test)]

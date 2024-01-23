@@ -3,50 +3,43 @@ use std::{
     io::{self, Write},
 };
 
-use crate::{
-    error_reporter::{ConsoleErrorReporter, ErrorReporter},
-    parser::Parser,
-    scanner::Scanner,
-};
+use miette::IntoDiagnostic;
 
-pub struct Lox {
-    error_reporter: Box<dyn ErrorReporter>,
-}
+use crate::{parser::Parser, scanner::Scanner};
+
+pub struct Lox {}
 
 impl Lox {
     pub fn new() -> Self {
-        Self {
-            error_reporter: Box::new(ConsoleErrorReporter::new()),
-        }
+        Self {}
     }
 
-    fn run(&mut self, source: String, filename: String) {
-        let mut scanner = Scanner::new(source,filename, self.error_reporter.as_mut());
-        let tokens = scanner.scan_tokens();
+    fn run(&mut self, source: String, filename: String) -> miette::Result<()> {
+        let mut scanner = Scanner::new(source, filename);
+        let tokens = scanner.scan_tokens()?;
         // tokens.iter().for_each(|x| println!("{:?}", x));
-        if !self.error_reporter.had_error() {
-            let mut parser = Parser::new(tokens);
-            println!("{}", parser.parse());
-        }
+        let mut parser = Parser::new(tokens);
+        println!("{}", parser.parse());
+        Ok(())
     }
-    pub fn run_file(&mut self, file: String) -> bool {
-        let contents = fs::read_to_string(file.clone()).unwrap();
-        self.run(contents, file);
-        self.error_reporter.had_error() // TODO: better error handling then boolean...
+    pub fn run_file(&mut self, file: String) -> miette::Result<()> {
+        let contents = fs::read_to_string(file.clone()).into_diagnostic()?;
+        self.run(contents, file)?;
+        Ok(())
     }
 
-    pub fn run_prompt(&mut self) {
+    pub fn run_prompt(&mut self) -> miette::Result<()> {
         let std = io::stdin();
         loop {
             print!("> ");
-            io::stdout().flush().unwrap();
+            io::stdout().flush().into_diagnostic()?;
             let mut buf = String::new();
-            match std.read_line(&mut buf).unwrap() {
-                0 => return,
-                _ => {
-                    self.run(buf.trim_end().to_string(), "stdin".to_string());
-                    self.error_reporter.reset();
-                }
+            match std.read_line(&mut buf).into_diagnostic()? {
+                0 => return Ok(()),
+                _ => match self.run(buf.trim_end().to_string(), "stdin".to_string()) {
+                    Ok(_) => (),
+                    Err(err) => println!("{:?}", err),
+                },
             }
         }
     }
