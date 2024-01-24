@@ -1,4 +1,3 @@
-pub mod error;
 use std::sync::Arc;
 
 use miette::NamedSource;
@@ -8,7 +7,8 @@ use crate::{expr::Expr, token::Token};
 
 use crate::token::TokenType::*;
 
-use self::error::ParserError::{self, *};
+use super::error::ParserError::{self, *};
+
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
@@ -164,7 +164,7 @@ mod parser_tests {
     use miette::NamedSource;
 
     use crate::{
-        parser::error::ParserError,
+        parsing::error::ParserError,
         token::{Token, TokenType},
     };
 

@@ -11,10 +11,10 @@ use args::Args;
 use miette::{IntoDiagnostic, NamedSource};
 
 mod args;
-mod expr;
 mod lox;
-mod parser;
-mod scanner;
+mod expr;
+mod parsing;
+mod scanning;
 mod token;
 
 fn main() {

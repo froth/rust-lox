@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use miette::NamedSource;
 
-use crate::{parser::Parser, scanner::Scanner};
+use crate::{parsing::Parser, scanning::Scanner};
+
 
 pub struct Lox {}
 

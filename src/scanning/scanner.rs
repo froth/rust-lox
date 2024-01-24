@@ -1,17 +1,12 @@
-pub mod error;
-mod error_combiner;
-
 use std::sync::Arc;
 
 use miette::NamedSource;
 use phf::phf_map;
 
-use crate::{
-    scanner::error::ScannerError::{self, *},
-    token::{Token, TokenType},
-};
+use crate::token::{Token, TokenType};
 
-use self::{error::ScannerErrors, error_combiner::ErrorCombiner};
+use super::{error::{ScannerError::{self, *}, ScannerErrors}, error_combiner::ErrorCombiner};
+
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "and" => TokenType::And,
@@ -219,7 +214,7 @@ impl Scanner {
 mod scanner_tests {
     use miette::NamedSource;
 
-    use crate::scanner::error::ScannerError;
+    use crate::scanning::error::ScannerError;
 
     use super::Scanner;
     use super::TokenType::*;
