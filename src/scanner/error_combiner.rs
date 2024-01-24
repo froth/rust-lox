@@ -1,14 +1,17 @@
+use std::sync::Arc;
+
 use miette::{NamedSource, SourceSpan};
 
 use super::error::ScannerError::{self, UnexpectedCharacter, UnexpectedCharacters};
 
 pub struct ErrorCombiner {
-    source: String,
-    filename: String,
+    named_source: Arc<NamedSource>,
 }
 
 impl ErrorCombiner {
-    pub fn new(source: String, filename: String) -> Self { Self { source, filename } }
+    pub fn new(named_source: Arc<NamedSource>) -> Self {
+        Self { named_source }
+    }
 
     fn handle_accumulated(
         &self,
@@ -21,12 +24,12 @@ impl ErrorCombiner {
                 [] => (),
                 [char] => result.push(UnexpectedCharacter {
                     char: *char,
-                    src: self.named_source(),
+                    src: self.named_source.clone(),
                     location: *last_offset,
                 }),
                 _ => result.push(UnexpectedCharacters {
                     chars: accumulated.iter().collect(),
-                    src: self.named_source(),
+                    src: self.named_source.clone(),
                     location: *last_offset,
                 }),
             };
@@ -35,10 +38,7 @@ impl ErrorCombiner {
         *last_offset = None;
     }
 
-    pub fn combine(
-        &self,
-        scanner_errors: Vec<ScannerError>,
-    ) -> Vec<ScannerError> {
+    pub fn combine(&self, scanner_errors: Vec<ScannerError>) -> Vec<ScannerError> {
         let mut result = vec![];
         let mut accumulated = vec![];
         let mut last_offset: Option<SourceSpan> = None;
@@ -70,9 +70,5 @@ impl ErrorCombiner {
         }
         self.handle_accumulated(&mut accumulated, &mut last_offset, &mut result);
         result
-    }
-
-    fn named_source(&self) -> NamedSource {
-        NamedSource::new(self.filename.clone(), self.source.to_string())
     }
 }

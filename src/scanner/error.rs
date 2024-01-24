@@ -1,4 +1,4 @@
-use std::num::ParseFloatError;
+use std::{num::ParseFloatError, rc::Rc, sync::Arc};
 
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
@@ -8,7 +8,7 @@ pub enum ScannerError {
     UnexpectedCharacter {
         char: char,
         #[source_code]
-        src: NamedSource,
+        src: Arc<NamedSource>,
         #[label("here")]
         location: SourceSpan,
     },
@@ -17,7 +17,7 @@ pub enum ScannerError {
     UnexpectedCharacters {
         chars: String,
         #[source_code]
-        src: NamedSource,
+        src: Arc<NamedSource>,
         #[label("here")]
         location: SourceSpan,
     },
@@ -25,7 +25,7 @@ pub enum ScannerError {
     #[error("Non terminated String")]
     NonTerminatedString {
         #[source_code]
-        src: NamedSource,
+        src: Arc<NamedSource>,
         #[label("here")]
         location: SourceSpan,
     },
