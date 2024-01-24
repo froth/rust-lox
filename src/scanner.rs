@@ -1,4 +1,4 @@
-use miette::NamedSource;
+use miette::{NamedSource, SourceSpan};
 use phf::phf_map;
 
 use crate::{
@@ -68,83 +68,6 @@ impl Scanner {
             let scanner_errors = self.combine_unexpected_character_errors(scanner_errors);
             Err(AccumulatedScannerErrors { scanner_errors })
         }
-    }
-
-    // Oh my... there has to be a shorter solution
-    // TODO: manual loop over into_iter and collect?
-    fn combine_unexpected_character_errors(
-        &mut self,
-        scanner_errors: Vec<ScannerError>,
-    ) -> Vec<ScannerError> {
-        scanner_errors
-            .into_iter()
-            .fold(Vec::<ScannerError>::new(), |mut acc, e| {
-                match acc.last() {
-                    Some(last_error) => {
-                        if let (
-                            UnexpectedCharacter {
-                                char,
-                                src: _,
-                                location,
-                            },
-                            UnexpectedCharacter {
-                                char: new_char,
-                                src: _,
-                                location: new_location,
-                            },
-                        ) = (last_error, &e)
-                        {
-                            if location.offset() + location.len() == new_location.offset() {
-                                let location =
-                                    (location.offset(), location.len() + new_location.len()).into();
-                                let new = UnexpectedCharacters {
-                                    chars: [*char, *new_char].iter().collect(),
-                                    src: self.named_source(),
-                                    location,
-                                };
-                                if let Some(x) = acc.last_mut() {
-                                    *x = new;
-                                }
-                            } else {
-                                acc.push(e)
-                            }
-                        } else if let (
-                            UnexpectedCharacters {
-                                chars,
-                                src: _,
-                                location,
-                            },
-                            UnexpectedCharacter {
-                                char: new_char,
-                                src: _,
-                                location: new_location,
-                            },
-                        ) = (last_error, &e)
-                        {
-                            if location.offset() + location.len() == new_location.offset() {
-                                let location =
-                                    (location.offset(), location.len() + new_location.len()).into();
-                                let mut chars = chars.to_string();
-                                chars.push(*new_char);
-                                let new = UnexpectedCharacters {
-                                    chars,
-                                    src: self.named_source(),
-                                    location,
-                                };
-                                if let Some(x) = acc.last_mut() {
-                                    *x = new;
-                                }
-                            } else {
-                                acc.push(e)
-                            }
-                        } else {
-                            acc.push(e)
-                        }
-                    }
-                    _ => acc.push(e),
-                }
-                acc
-            })
     }
 
     fn scan_token(&mut self, char: char) -> Result<Option<TokenType>> {
@@ -284,6 +207,68 @@ impl Scanner {
         let text = &self.source[self.start..self.current];
         let token = KEYWORDS.get(text).cloned();
         token.unwrap_or(TokenType::Identifier)
+    }
+
+    fn handle_accumulated(
+        &self,
+        accumulated: &mut Vec<char>,
+        last_offset: &mut Option<SourceSpan>,
+        result: &mut Vec<ScannerError>,
+    ) {
+        if let Some(last_offset) = last_offset {
+            match &accumulated[..] {
+                [] => (),
+                [char] => result.push(UnexpectedCharacter {
+                    char: *char,
+                    src: self.named_source(),
+                    location: *last_offset,
+                }),
+                _ => result.push(UnexpectedCharacters {
+                    chars: accumulated.iter().collect(),
+                    src: self.named_source(),
+                    location: *last_offset,
+                }),
+            };
+        }
+        accumulated.clear();
+        *last_offset = None;
+    }
+
+    fn combine_unexpected_character_errors(
+        &self,
+        scanner_errors: Vec<ScannerError>,
+    ) -> Vec<ScannerError> {
+        let mut result = vec![];
+        let mut accumulated = vec![];
+        let mut last_offset: Option<SourceSpan> = None;
+
+        for error in scanner_errors.into_iter() {
+            if let UnexpectedCharacter {
+                char,
+                src: _,
+                location,
+            } = &error
+            {
+                match last_offset {
+                    Some(offset) if offset.offset() + offset.len() == location.offset() => {
+                        last_offset = Some((offset.offset(), offset.len() + location.len()).into());
+                    }
+                    Some(_) => {
+                        self.handle_accumulated(&mut accumulated, &mut last_offset, &mut result);
+                        last_offset = Some(*location);
+                    }
+                    None => {
+                        last_offset = Some(*location);
+                    }
+                }
+                accumulated.push(*char);
+                continue;
+            }
+            self.handle_accumulated(&mut accumulated, &mut last_offset, &mut result);
+            result.push(error)
+        }
+        self.handle_accumulated(&mut accumulated, &mut last_offset, &mut result);
+        result
     }
 
     fn named_source(&self) -> NamedSource {
