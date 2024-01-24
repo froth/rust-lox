@@ -3,12 +3,6 @@ use std::num::ParseFloatError;
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
-pub enum Error {
-    #[error(transparent)]
-    IO(#[from] std::io::Error),
-}
-
-#[derive(thiserror::Error, Debug, Diagnostic)]
 pub enum ScannerError {
     #[error("Unexpected character: {char}")]
     UnexpectedCharacter {

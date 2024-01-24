@@ -1,13 +1,12 @@
-use miette::{NamedSource, SourceSpan};
+use miette::NamedSource;
 use phf::phf_map;
 
 use crate::{
-    error::{
-        AccumulatedScannerErrors,
-        ScannerError::{self, *},
-    },
+    scanner::error::ScannerError::{self, *},
     token::{Token, TokenType},
 };
+
+use super::{error::AccumulatedScannerErrors, error_combiner::ErrorCombiner};
 pub struct Scanner {
     source: String,
     filename: String,
@@ -15,6 +14,7 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: usize,
+    error_combiner: ErrorCombiner,
 }
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
@@ -40,6 +40,7 @@ pub type Result<T> = core::result::Result<T, ScannerError>;
 
 impl Scanner {
     pub fn new(source: String, filename: String) -> Self {
+        let error_combiner = ErrorCombiner::new(source.to_string(), filename.to_string());
         Self {
             source,
             filename,
@@ -47,6 +48,7 @@ impl Scanner {
             start: 0,
             current: 0,
             line: 1,
+            error_combiner
         }
     }
 
@@ -65,7 +67,8 @@ impl Scanner {
         if scanner_errors.is_empty() {
             Ok(self.tokens.to_vec())
         } else {
-            let scanner_errors = self.combine_unexpected_character_errors(scanner_errors);
+
+            let scanner_errors = self.error_combiner.combine(scanner_errors);
             Err(AccumulatedScannerErrors { scanner_errors })
         }
     }
@@ -209,68 +212,6 @@ impl Scanner {
         token.unwrap_or(TokenType::Identifier)
     }
 
-    fn handle_accumulated(
-        &self,
-        accumulated: &mut Vec<char>,
-        last_offset: &mut Option<SourceSpan>,
-        result: &mut Vec<ScannerError>,
-    ) {
-        if let Some(last_offset) = last_offset {
-            match &accumulated[..] {
-                [] => (),
-                [char] => result.push(UnexpectedCharacter {
-                    char: *char,
-                    src: self.named_source(),
-                    location: *last_offset,
-                }),
-                _ => result.push(UnexpectedCharacters {
-                    chars: accumulated.iter().collect(),
-                    src: self.named_source(),
-                    location: *last_offset,
-                }),
-            };
-        }
-        accumulated.clear();
-        *last_offset = None;
-    }
-
-    fn combine_unexpected_character_errors(
-        &self,
-        scanner_errors: Vec<ScannerError>,
-    ) -> Vec<ScannerError> {
-        let mut result = vec![];
-        let mut accumulated = vec![];
-        let mut last_offset: Option<SourceSpan> = None;
-
-        for error in scanner_errors.into_iter() {
-            if let UnexpectedCharacter {
-                char,
-                src: _,
-                location,
-            } = &error
-            {
-                match last_offset {
-                    Some(offset) if offset.offset() + offset.len() == location.offset() => {
-                        last_offset = Some((offset.offset(), offset.len() + location.len()).into());
-                    }
-                    Some(_) => {
-                        self.handle_accumulated(&mut accumulated, &mut last_offset, &mut result);
-                        last_offset = Some(*location);
-                    }
-                    None => {
-                        last_offset = Some(*location);
-                    }
-                }
-                accumulated.push(*char);
-                continue;
-            }
-            self.handle_accumulated(&mut accumulated, &mut last_offset, &mut result);
-            result.push(error)
-        }
-        self.handle_accumulated(&mut accumulated, &mut last_offset, &mut result);
-        result
-    }
-
     fn named_source(&self) -> NamedSource {
         NamedSource::new(self.filename.clone(), self.source.to_string())
     }
@@ -281,7 +222,7 @@ mod scanner_tests {
 
     use std::string::String;
 
-    use crate::error::ScannerError;
+    use crate::scanner::error::ScannerError;
 
     use super::Scanner;
     use super::TokenType::*;

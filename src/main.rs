@@ -4,7 +4,6 @@ use lox::Lox;
 use args::Args;
 
 mod args;
-mod error;
 mod expr;
 mod lox;
 mod parser;
