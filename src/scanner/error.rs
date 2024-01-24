@@ -1,4 +1,4 @@
-use std::{num::ParseFloatError, rc::Rc, sync::Arc};
+use std::{num::ParseFloatError, sync::Arc};
 
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
@@ -36,7 +36,7 @@ pub enum ScannerError {
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
 #[error("Errors while scanning")]
-pub struct AccumulatedScannerErrors {
+pub struct ScannerErrors {
     #[related]
     pub scanner_errors: Vec<ScannerError>,
 }

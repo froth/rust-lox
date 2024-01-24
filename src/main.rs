@@ -35,7 +35,7 @@ fn main() {
 fn run_file(file: String) -> miette::Result<()> {
     let contents = fs::read_to_string(file.clone()).into_diagnostic()?;
 
-    let named_source: Arc<NamedSource> = NamedSource::new(file, contents.to_string()).into();
+    let named_source: Arc<NamedSource> = NamedSource::new(file, contents.clone()).into();
     let lox = Lox::new();
     lox.run(contents, named_source)?;
     Ok(())
@@ -53,8 +53,8 @@ fn run_prompt() -> miette::Result<()> {
             _ => {
                 let source = buf.trim_end().to_string();
                 let named_source: Arc<NamedSource> =
-                    NamedSource::new("stdin", source.to_string()).into();
-                match lox.run(source.to_string(), named_source) {
+                    NamedSource::new("stdin", source.clone()).into();
+                match lox.run(source, named_source) {
                     Ok(_) => (),
                     Err(err) => println!("{:?}", err),
                 }

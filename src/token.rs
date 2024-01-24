@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use miette::SourceSpan;
+
 #[derive(Debug, Clone)]
 pub enum TokenType {
     //single character tokens.
@@ -47,6 +49,7 @@ pub enum TokenType {
     True,
     Var,
     While,
+
     // Eof
     Eof,
 }
@@ -61,15 +64,15 @@ impl Display for TokenType {
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub line: usize,
+    pub location: SourceSpan,
 }
 
 impl Token {
-    pub fn new<S: Into<String>>(token_type: TokenType, lexeme: S, line: usize) -> Self {
+    pub fn new<S: Into<String>>(token_type: TokenType, lexeme: S, location: SourceSpan) -> Self {
         Self {
             token_type,
             lexeme: lexeme.into(),
-            line,
+            location,
         }
     }
 }

@@ -11,7 +11,7 @@ use crate::{
     token::{Token, TokenType},
 };
 
-use self::{error::AccumulatedScannerErrors, error_combiner::ErrorCombiner};
+use self::{error::ScannerErrors, error_combiner::ErrorCombiner};
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "and" => TokenType::And,
@@ -38,7 +38,6 @@ pub struct Scanner {
     tokens: Vec<Token>,
     start: usize,
     current: usize,
-    line: usize,
     error_combiner: ErrorCombiner,
 }
 
@@ -53,12 +52,11 @@ impl Scanner {
             tokens: vec![],
             start: 0,
             current: 0,
-            line: 1,
             error_combiner,
         }
     }
 
-    pub fn scan_tokens(&mut self) -> core::result::Result<Vec<Token>, AccumulatedScannerErrors> {
+    pub fn scan_tokens(&mut self) -> core::result::Result<Vec<Token>, ScannerErrors> {
         let mut scanner_errors = vec![];
         while let Some(char) = self.advance() {
             self.start = self.current - 1; //has already been advanced
@@ -68,13 +66,16 @@ impl Scanner {
                 Err(err) => scanner_errors.push(err),
             }
         }
-        self.tokens
-            .push(Token::new(TokenType::Eof, String::new(), self.line));
+        self.tokens.push(Token::new(
+            TokenType::Eof,
+            String::new(),
+            (self.current, 0).into(),
+        ));
         if scanner_errors.is_empty() {
             Ok(self.tokens.to_vec())
         } else {
             let scanner_errors = self.error_combiner.combine(scanner_errors);
-            Err(AccumulatedScannerErrors { scanner_errors })
+            Err(ScannerErrors { scanner_errors })
         }
     }
 
@@ -107,11 +108,7 @@ impl Scanner {
                     Ok(Some(Slash))
                 }
             }
-            '\n' => {
-                self.line += 1;
-                Ok(None)
-            }
-            ' ' | '\r' | '\t' => Ok(None),
+            ' ' | '\r' | '\t' | '\n' => Ok(None),
             '"' => self.read_string(),
             c if c.is_ascii_digit() => self.read_number(),
             c if c.is_ascii_alphabetic() || c == '_' => Ok(Some(self.read_identifier())),
@@ -126,7 +123,11 @@ impl Scanner {
 
     fn add_token(&mut self, token_type: TokenType) {
         let text = self.source[self.start..self.current].to_string();
-        self.tokens.push(Token::new(token_type, text, self.line))
+        self.tokens.push(Token::new(
+            token_type,
+            text,
+            (self.start, self.current - self.start).into(),
+        ))
     }
 
     fn advance(&mut self) -> Option<char> {
@@ -170,10 +171,6 @@ impl Scanner {
         loop {
             match self.peek() {
                 Some('"') => break,
-                Some('\n') => {
-                    self.line += 1;
-                    self.current += 1;
-                }
                 Some(_) => self.current += 1,
                 None => Err(NonTerminatedString {
                     src: self.named_source.clone(),
