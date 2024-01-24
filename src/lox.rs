@@ -12,11 +12,11 @@ impl Lox {
     }
 
     pub fn run(&self, source: String, named_source: Arc<NamedSource>) -> miette::Result<()> {
-        let mut scanner = Scanner::new(source, named_source);
+        let mut scanner = Scanner::new(source, named_source.clone());
         let tokens = scanner.scan_tokens()?;
         // tokens.iter().for_each(|x| println!("{:?}", x));
-        let mut parser = Parser::new(tokens);
-        println!("{}", parser.parse());
+        let mut parser = Parser::new(tokens, named_source);
+        println!("{}", parser.parse()?);
         Ok(())
     }
 }
