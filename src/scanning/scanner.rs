@@ -5,7 +5,7 @@ use phf::phf_map;
 
 use crate::token::{Token, TokenType};
 
-use super::{error::{ScannerError::{self, *}, ScannerErrors}, error_combiner::ErrorCombiner};
+use super::{scanner_error::{ScannerError::{self, *}, ScannerErrors}, error_combiner::ErrorCombiner};
 
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
@@ -214,7 +214,7 @@ impl Scanner {
 mod scanner_tests {
     use miette::NamedSource;
 
-    use crate::scanning::error::ScannerError;
+    use crate::scanning::scanner_error::ScannerError;
 
     use super::Scanner;
     use super::TokenType::*;

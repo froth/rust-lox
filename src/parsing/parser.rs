@@ -7,7 +7,7 @@ use crate::{expr::Expr, token::Token};
 
 use crate::token::TokenType::*;
 
-use super::error::ParserError::{self, *};
+use super::parser_error::ParserError::{self, *};
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -164,7 +164,7 @@ mod parser_tests {
     use miette::NamedSource;
 
     use crate::{
-        parsing::error::ParserError,
+        parsing::parser_error::ParserError,
         token::{Token, TokenType},
     };
 

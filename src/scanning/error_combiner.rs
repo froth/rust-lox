@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use miette::{NamedSource, SourceSpan};
 
-use super::error::ScannerError::{self, UnexpectedCharacter, UnexpectedCharacters};
+use super::scanner_error::ScannerError::{self, UnexpectedCharacter, UnexpectedCharacters};
 
 pub struct ErrorCombiner {
     named_source: Arc<NamedSource>,
