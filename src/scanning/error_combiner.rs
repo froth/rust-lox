@@ -5,11 +5,11 @@ use miette::{NamedSource, SourceSpan};
 use super::scanner_error::ScannerError::{self, UnexpectedCharacter, UnexpectedCharacters};
 
 pub struct ErrorCombiner {
-    named_source: Arc<NamedSource>,
+    named_source: Arc<NamedSource<String>>,
 }
 
 impl ErrorCombiner {
-    pub fn new(named_source: Arc<NamedSource>) -> Self {
+    pub fn new(named_source: Arc<NamedSource<String>>) -> Self {
         Self { named_source }
     }
 

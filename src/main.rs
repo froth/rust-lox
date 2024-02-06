@@ -1,7 +1,6 @@
 use std::{
     fs,
     io::{self, Write},
-    sync::Arc,
 };
 
 use clap::Parser;
@@ -11,8 +10,8 @@ use args::Args;
 use miette::{IntoDiagnostic, NamedSource};
 
 mod args;
-mod lox;
 mod expr;
+mod lox;
 mod parsing;
 mod scanning;
 mod token;
@@ -35,7 +34,7 @@ fn main() {
 fn run_file(file: String) -> miette::Result<()> {
     let contents = fs::read_to_string(file.clone()).into_diagnostic()?;
 
-    let named_source: Arc<NamedSource> = NamedSource::new(file, contents.clone()).into();
+    let named_source  = NamedSource::new(file, contents.clone());
     let lox = Lox::new();
     lox.run(contents, named_source)?;
     Ok(())
@@ -52,8 +51,8 @@ fn run_prompt() -> miette::Result<()> {
             0 => return Ok(()),
             _ => {
                 let source = buf.trim_end().to_string();
-                let named_source: Arc<NamedSource> =
-                    NamedSource::new("stdin", source.clone()).into();
+                let named_source: NamedSource<String> =
+                    NamedSource::new("stdin", source.clone());
                 match lox.run(source, named_source) {
                     Ok(_) => (),
                     Err(err) => println!("{:?}", err),

@@ -3,20 +3,19 @@ use std::sync::Arc;
 use miette::NamedSource;
 
 use crate::expr::Literal::{self, Boolean};
+use crate::token::TokenType;
 use crate::{expr::Expr, token::Token};
-
-use crate::token::TokenType::*;
 
 use super::parser_error::ParserError::{self, *};
 
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-    named_source: Arc<NamedSource>,
+    named_source: Arc<NamedSource<String>>,
 }
 pub type Result<T> = core::result::Result<T, ParserError>;
 impl Parser {
-    pub fn new(tokens: Vec<Token>, named_source: Arc<NamedSource>) -> Self {
+    pub fn new(tokens: Vec<Token>, named_source: Arc<NamedSource<String>>) -> Self {
         Self {
             tokens,
             current: 0,
@@ -28,7 +27,7 @@ impl Parser {
         assert!(self
             .tokens
             .last()
-            .is_some_and(|t| matches!(t.token_type, Eof)));
+            .is_some_and(|t| matches!(t.token_type, TokenType::Eof)));
         match self.expression() {
             Ok(res) => Ok(res),
             Err(err) => {
@@ -39,6 +38,7 @@ impl Parser {
     }
 
     fn synchronize(&mut self) {
+        use TokenType::*;
         self.advance();
         while !self.is_at_end() {
             if matches!(self.previous().token_type, Semicolon) {
@@ -58,6 +58,7 @@ impl Parser {
     }
 
     fn equality(&mut self) -> Result<Expr> {
+        use TokenType::*;
         let mut expr = self.comparision()?;
         while matches!(self.peek().token_type, BangEqual | EqualEqual) {
             let operator = self.advance().clone();
@@ -68,6 +69,7 @@ impl Parser {
     }
 
     fn comparision(&mut self) -> Result<Expr> {
+        use TokenType::*;
         let mut expr = self.term()?;
         while matches!(
             self.peek().token_type,
@@ -81,6 +83,7 @@ impl Parser {
     }
 
     fn term(&mut self) -> Result<Expr> {
+        use TokenType::*;
         let mut expr = self.factor()?;
         while matches!(self.peek().token_type, Minus | Plus) {
             let operator = self.advance().clone();
@@ -91,6 +94,7 @@ impl Parser {
     }
 
     fn factor(&mut self) -> Result<Expr> {
+        use TokenType::*;
         let mut expr = self.unary()?;
         while matches!(self.peek().token_type, Slash | Star) {
             let operator = self.advance().clone();
@@ -101,6 +105,7 @@ impl Parser {
     }
 
     fn unary(&mut self) -> Result<Expr> {
+        use TokenType::*;
         if matches!(self.peek().token_type, Bang | Minus) {
             let operator = self.advance().clone();
             Ok(Expr::unary(operator, self.unary()?))
@@ -110,6 +115,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr> {
+        use TokenType::*;
         let token = self.advance().clone();
         let expr = match token.token_type.clone() {
             False => Expr::literal(Boolean(false)),
@@ -146,7 +152,7 @@ impl Parser {
     }
 
     fn is_at_end(&self) -> bool {
-        matches!(self.peek().token_type, Eof)
+        matches!(self.peek().token_type, TokenType::Eof)
     }
 
     fn peek(&self) -> &Token {
@@ -177,7 +183,7 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", "").into());
+        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
         let expr = parser.parse().unwrap();
         assert_eq!(expr.to_string(), r#"("foo")"#);
     }
@@ -186,7 +192,7 @@ mod parser_tests {
     fn parse_eof() {
         let token = token(TokenType::Eof);
         let tokens = vec![token.clone()];
-        let mut parser = Parser::new(tokens, NamedSource::new("", "").into());
+        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
         let err = parser.parse().unwrap_err();
         assert_matches!(err, ParserError::ExpectedExpression {
              src: _,
@@ -205,7 +211,7 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", "").into());
+        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
         let expr = parser.parse().unwrap();
         assert_eq!(
             expr.to_string(),
@@ -224,7 +230,7 @@ mod parser_tests {
             token(TokenType::RightParen),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", "").into());
+        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
         let expr = parser.parse().unwrap();
         assert_eq!(expr.to_string(), r#"(group (group ("foo")))"#);
     }
@@ -239,7 +245,7 @@ mod parser_tests {
             token(TokenType::RightParen),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", "").into());
+        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
         let err = parser.parse().unwrap_err();
         assert_matches!(
             err,

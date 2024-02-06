@@ -8,7 +8,7 @@ description = "An interpreter for the Lox language (http://craftinginterpreters.
 
 [dependencies]
 clap = { version = "4.4.11", features = ["derive"] }
-miette = { version = "5.10.0", features = ["fancy"] }
+miette = { version = "6.0.1", features = ["fancy", "syntect-highlighter"] }
 phf = { version = "0.11.2", features = ["macros"] }
 thiserror = "1.0.56"
 

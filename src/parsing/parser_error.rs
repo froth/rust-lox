@@ -7,7 +7,7 @@ pub enum ParserError {
     #[error("Expected )")]
     ExpectedRightParan {
         #[source_code]
-        src: Arc<NamedSource>,
+        src: Arc<NamedSource<String>>,
         #[label("here")]
         location: SourceSpan,
     },
@@ -15,7 +15,7 @@ pub enum ParserError {
     #[error("Expected expression")]
     ExpectedExpression {
         #[source_code]
-        src: Arc<NamedSource>,
+        src: Arc<NamedSource<String>>,
         #[label("here")]
         location: SourceSpan,
     },
