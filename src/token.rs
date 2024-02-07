@@ -1,6 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
-use miette::SourceSpan;
+use miette::{NamedSource, SourceSpan};
 
 #[derive(Debug, Clone)]
 pub enum TokenType {
@@ -65,14 +65,21 @@ pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub location: SourceSpan,
+    pub src: Arc<NamedSource<String>>,
 }
 
 impl Token {
-    pub fn new<S: Into<String>>(token_type: TokenType, lexeme: S, location: SourceSpan) -> Self {
+    pub fn new<S: Into<String>>(
+        token_type: TokenType,
+        lexeme: S,
+        location: SourceSpan,
+        src: Arc<NamedSource<String>>,
+    ) -> Self {
         Self {
             token_type,
             lexeme: lexeme.into(),
             location,
+            src,
         }
     }
 }
