@@ -7,7 +7,7 @@ authors = ["Fred Roth"]
 description = "An interpreter for the Lox language (http://craftinginterpreters.com/)"
 
 [dependencies]
-clap = { version = "4.4.11", features = ["derive"] }
+clap = { version = "4.4.18", features = ["derive"] }
 miette = { version = "6.0.1", features = ["fancy", "syntect-highlighter"] }
 phf = { version = "0.11.2", features = ["macros"] }
 thiserror = "1.0.56"
