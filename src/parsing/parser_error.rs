@@ -19,6 +19,14 @@ pub enum ParserError {
         #[label("here")]
         location: SourceSpan,
     },
+
+    #[error("Unexpected EOF")]
+    UnexpectedEof {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]

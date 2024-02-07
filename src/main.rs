@@ -11,10 +11,14 @@ use miette::{IntoDiagnostic, NamedSource};
 
 mod args;
 mod expr;
+mod interpreting;
 mod lox;
 mod parsing;
 mod scanning;
+mod source_span_extensions;
 mod token;
+mod types;
+mod value;
 
 fn main() {
     let args = Args::parse();
@@ -34,7 +38,7 @@ fn main() {
 fn run_file(file: String) -> miette::Result<()> {
     let contents = fs::read_to_string(file.clone()).into_diagnostic()?;
 
-    let named_source  = NamedSource::new(file, contents.clone());
+    let named_source = NamedSource::new(file, contents.clone());
     let lox = Lox::new();
     lox.run(contents, named_source)?;
     Ok(())
@@ -51,8 +55,7 @@ fn run_prompt() -> miette::Result<()> {
             0 => return Ok(()),
             _ => {
                 let source = buf.trim_end().to_string();
-                let named_source: NamedSource<String> =
-                    NamedSource::new("stdin", source.clone());
+                let named_source: NamedSource<String> = NamedSource::new("stdin", source.clone());
                 match lox.run(source, named_source) {
                     Ok(_) => (),
                     Err(err) => println!("{:?}", err),

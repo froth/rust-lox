@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
-use miette::NamedSource;
-
-use crate::expr::Literal::{self, Boolean};
+use crate::expr::ExprWithContext;
+use crate::expr::Literal::{self};
+use crate::source_span_extensions::SourceSpanExtensions;
 use crate::token::TokenType;
 use crate::{expr::Expr, token::Token};
 
@@ -11,19 +9,14 @@ use super::parser_error::ParserError::{self, *};
 pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
-    named_source: Arc<NamedSource<String>>,
 }
 pub type Result<T> = core::result::Result<T, ParserError>;
 impl Parser {
-    pub fn new(tokens: Vec<Token>, named_source: Arc<NamedSource<String>>) -> Self {
-        Self {
-            tokens,
-            current: 0,
-            named_source,
-        }
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr> {
+    pub fn parse(&mut self) -> Result<ExprWithContext> {
         assert!(self
             .tokens
             .last()
@@ -53,22 +46,22 @@ impl Parser {
         }
     }
 
-    fn expression(&mut self) -> Result<Expr> {
+    fn expression(&mut self) -> Result<ExprWithContext> {
         self.equality()
     }
 
-    fn equality(&mut self) -> Result<Expr> {
+    fn equality(&mut self) -> Result<ExprWithContext> {
         use TokenType::*;
         let mut expr = self.comparision()?;
         while matches!(self.peek().token_type, BangEqual | EqualEqual) {
             let operator = self.advance().clone();
             let right = self.comparision()?;
-            expr = Expr::binary(expr, operator, right);
+            expr = ExprWithContext::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn comparision(&mut self) -> Result<Expr> {
+    fn comparision(&mut self) -> Result<ExprWithContext> {
         use TokenType::*;
         let mut expr = self.term()?;
         while matches!(
@@ -77,67 +70,76 @@ impl Parser {
         ) {
             let operator = self.advance().clone();
             let right = self.term()?;
-            expr = Expr::binary(expr, operator, right);
+            expr = ExprWithContext::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn term(&mut self) -> Result<Expr> {
+    fn term(&mut self) -> Result<ExprWithContext> {
         use TokenType::*;
         let mut expr = self.factor()?;
         while matches!(self.peek().token_type, Minus | Plus) {
             let operator = self.advance().clone();
             let right = self.factor()?;
-            expr = Expr::binary(expr, operator, right);
+            expr = ExprWithContext::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn factor(&mut self) -> Result<Expr> {
+    fn factor(&mut self) -> Result<ExprWithContext> {
         use TokenType::*;
         let mut expr = self.unary()?;
         while matches!(self.peek().token_type, Slash | Star) {
             let operator = self.advance().clone();
             let right = self.unary()?;
-            expr = Expr::binary(expr, operator, right);
+            expr = ExprWithContext::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn unary(&mut self) -> Result<Expr> {
+    fn unary(&mut self) -> Result<ExprWithContext> {
         use TokenType::*;
         if matches!(self.peek().token_type, Bang | Minus) {
             let operator = self.advance().clone();
-            Ok(Expr::unary(operator, self.unary()?))
+            Ok(ExprWithContext::unary(operator, self.unary()?))
         } else {
             self.primary()
         }
     }
 
-    fn primary(&mut self) -> Result<Expr> {
+    fn primary(&mut self) -> Result<ExprWithContext> {
         use TokenType::*;
         let token = self.advance().clone();
         let expr = match token.token_type.clone() {
-            False => Expr::literal(Boolean(false)),
-            True => Expr::literal(Boolean(true)),
-            Nil => Expr::literal(Literal::Nil),
-            Number(n) => Expr::literal(Literal::Number(n)),
-            String(s) => Expr::literal(Literal::String(s)),
+            False => ExprWithContext::literal(Literal::Boolean(false), &token),
+            True => ExprWithContext::literal(Literal::Boolean(true), &token),
+            Nil => ExprWithContext::literal(Literal::Nil, &token),
+            Number(n) => ExprWithContext::literal(Literal::Number(n), &token),
+            String(s) => ExprWithContext::literal(Literal::String(s), &token),
             LeftParen => {
                 let expr = self.expression()?;
-                let peek = self.peek();
+                let peek = self.peek().clone();
                 if let RightParen = peek.token_type {
                     self.advance();
                 } else {
                     Err(ExpectedRightParan {
-                        src: self.named_source.clone(),
+                        src: peek.src.clone(),
                         location: peek.location,
                     })?
                 }
-                Expr::grouping(expr)
+                let location = token.location.until(peek.location);
+                ExprWithContext::new(Expr::grouping(expr), location, token.src)
             }
+            Eof => Err(UnexpectedEof {
+                src: token.src.clone(),
+                location: (
+                    token.location.offset().saturating_sub(1),
+                    token.location.len(),
+                )
+                    .into(),
+            })?,
             _ => Err(ExpectedExpression {
-                src: self.named_source.clone(),
+                src: token.src.clone(),
                 location: token.location,
             })?,
         };
@@ -167,7 +169,7 @@ impl Parser {
 #[cfg(test)]
 mod parser_tests {
 
-    use miette::NamedSource;
+    use miette::{NamedSource, SourceSpan};
 
     use crate::{
         parsing::parser_error::ParserError,
@@ -183,7 +185,7 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
+        let mut parser = Parser::new(tokens);
         let expr = parser.parse().unwrap();
         assert_eq!(expr.to_string(), r#"("foo")"#);
     }
@@ -192,12 +194,12 @@ mod parser_tests {
     fn parse_eof() {
         let token = token(TokenType::Eof);
         let tokens = vec![token.clone()];
-        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
+        let mut parser = Parser::new(tokens);
         let err = parser.parse().unwrap_err();
-        assert_matches!(err, ParserError::ExpectedExpression {
+        assert_matches!(err, ParserError::UnexpectedEof {
              src: _,
              location,
-         } if location == token.location)
+         } if location.offset() == token.location.offset() -1)
     }
 
     #[test]
@@ -211,7 +213,7 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
+        let mut parser = Parser::new(tokens);
         let expr = parser.parse().unwrap();
         assert_eq!(
             expr.to_string(),
@@ -220,19 +222,32 @@ mod parser_tests {
     }
 
     #[test]
+    fn parse_minus_1() {
+        let tokens = vec![
+            token(TokenType::Minus),
+            token(TokenType::Number(1.0)),
+            token(TokenType::Eof),
+        ];
+        let mut parser = Parser::new(tokens);
+        let expr = parser.parse().unwrap();
+        assert_eq!(expr.to_string(), r#"(Minus (1))"#);
+    }
+
+    #[test]
     fn parse_grouping() {
         let string: String = "foo".into();
         let tokens = vec![
-            token(TokenType::LeftParen),
+            token_with_location(TokenType::LeftParen, (1, 1).into()),
             token(TokenType::LeftParen),
             token(TokenType::String(string.clone())),
             token(TokenType::RightParen),
-            token(TokenType::RightParen),
+            token_with_location(TokenType::RightParen, (9, 1).into()),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
+        let mut parser = Parser::new(tokens);
         let expr = parser.parse().unwrap();
         assert_eq!(expr.to_string(), r#"(group (group ("foo")))"#);
+        assert_eq!(expr.location, (1, 9).into())
     }
 
     #[test]
@@ -245,7 +260,7 @@ mod parser_tests {
             token(TokenType::RightParen),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens, NamedSource::new("", String::new()).into());
+        let mut parser = Parser::new(tokens);
         let err = parser.parse().unwrap_err();
         assert_matches!(
             err,
@@ -262,7 +277,16 @@ mod parser_tests {
         Token {
             token_type,
             lexeme: "FAKE_LEXEME".into(),
-            location: (0, 1).into(),
+            location: (1, 1).into(),
+            src: NamedSource::new("", String::new()).into(),
+        }
+    }
+    fn token_with_location(token_type: TokenType, location: SourceSpan) -> Token {
+        Token {
+            token_type,
+            lexeme: "FAKE_LEXEME".into(),
+            location,
+            src: NamedSource::new("", String::new()).into(),
         }
     }
 }

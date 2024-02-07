@@ -11,6 +11,7 @@ clap = { version = "4.4.11", features = ["derive"] }
 miette = { version = "6.0.1", features = ["fancy", "syntect-highlighter"] }
 phf = { version = "0.11.2", features = ["macros"] }
 thiserror = "1.0.56"
+strum = { version = "0.26", features = ["derive"] }
 
 [dev-dependencies]
 anyhow = "1.0.79"

@@ -70,6 +70,7 @@ impl Scanner {
             TokenType::Eof,
             String::new(),
             (self.current, 0).into(),
+            self.named_source.clone(),
         ));
         if scanner_errors.is_empty() {
             Ok(self.tokens.to_vec())
@@ -127,6 +128,7 @@ impl Scanner {
             token_type,
             text,
             (self.start, self.current - self.start).into(),
+            self.named_source.clone(),
         ))
     }
 
