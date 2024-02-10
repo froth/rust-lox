@@ -9,7 +9,7 @@ pub trait SourceSpanExtensions {
 impl SourceSpanExtensions for SourceSpan {
     fn until(&self, right: Self) -> Self {
         assert!(self.offset() <= right.offset());
-        let len = max(right.offset() + right.len() - 1, self.len());
+        let len = max(right.offset() - self.offset() + right.len(), self.len());
         (self.offset(), len).into()
     }
 }
@@ -36,5 +36,14 @@ mod source_span_extension_tests {
         let combined = left.until(right);
         assert_eq!(combined.offset(), 1);
         assert_eq!(combined.len(), 10);
+    }
+
+    #[test]
+    fn strang() {
+        let left: SourceSpan = (6, 1).into();
+        let right: SourceSpan = (10, 1).into();
+        let combined = left.until(right);
+        assert_eq!(combined.offset(), 6);
+        assert_eq!(combined.len(), 5);
     }
 }

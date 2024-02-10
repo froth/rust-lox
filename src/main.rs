@@ -27,7 +27,7 @@ fn main() {
         None => run_prompt(),
     };
     match result {
-        Ok(_) => (),
+        Ok(_) =>(),
         Err(err) => {
             eprintln!("{:?}", err);
             std::process::exit(65)
@@ -40,7 +40,8 @@ fn run_file(file: String) -> miette::Result<()> {
 
     let named_source = NamedSource::new(file, contents.clone());
     let lox = Lox::new();
-    lox.run(contents, named_source)?;
+    let value = lox.run(contents, named_source)?;
+    println!("{}", value);
     Ok(())
 }
 
@@ -57,8 +58,8 @@ fn run_prompt() -> miette::Result<()> {
                 let source = buf.trim_end().to_string();
                 let named_source: NamedSource<String> = NamedSource::new("stdin", source.clone());
                 match lox.run(source, named_source) {
-                    Ok(_) => (),
-                    Err(err) => println!("{:?}", err),
+                    Ok(value) => println!("{}", value),
+                    Err(err) => eprintln!("{:?}", err),
                 }
             }
         }
