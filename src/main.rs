@@ -27,7 +27,7 @@ fn main() {
         None => run_prompt(),
     };
     match result {
-        Ok(_) =>(),
+        Ok(_) => (),
         Err(err) => {
             eprintln!("{:?}", err);
             std::process::exit(65)

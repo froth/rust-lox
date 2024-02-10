@@ -104,3 +104,20 @@ impl Display for Literal {
         }
     }
 }
+impl From<bool> for Literal {
+    fn from(value: bool) -> Self {
+        Literal::Boolean(value)
+    }
+}
+
+impl From<f32> for Literal {
+    fn from(value: f32) -> Self {
+        Literal::Number(value)
+    }
+}
+
+impl From<String> for Literal {
+    fn from(value: String) -> Self {
+        Literal::String(value)
+    }
+}
