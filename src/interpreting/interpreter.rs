@@ -73,6 +73,16 @@ fn handle_numbers(
     }
 }
 
+fn handle_values(
+    left: &ExprWithContext,
+    right: &ExprWithContext,
+    f: fn(Value, Value) -> bool,
+) -> Result<Value> {
+    let l = left.interpret();
+    let r = right.interpret();
+    Ok(Value::Boolean(f(l?, r?)))
+}
+
 fn interpret_binary(
     left: &ExprWithContext,
     token: &Token,
@@ -87,16 +97,8 @@ fn interpret_binary(
         TokenType::GreaterEqual => handle_numbers(left, token, right, |l, r| (l >= r).into()),
         TokenType::Less => handle_numbers(left, token, right, |l, r| (l < r).into()),
         TokenType::LessEqual => handle_numbers(left, token, right, |l, r| (l <= r).into()),
-        TokenType::BangEqual => {
-            let l = left.interpret();
-            let r = right.interpret();
-            Ok(Value::Boolean(l? != r?))
-        }
-        TokenType::EqualEqual => {
-            let l = left.interpret();
-            let r = right.interpret();
-            Ok(Value::Boolean(l? == r?))
-        }
+        TokenType::BangEqual => handle_values(left, right, |l, r| l != r),
+        TokenType::EqualEqual => handle_values(left, right, |l, r| l == r),
         _ => panic!("wrong token type in Expr::Binary, bug in parser"),
     }
 }
