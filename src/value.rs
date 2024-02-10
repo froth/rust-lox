@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     String(String),
     Number(f32),

@@ -16,3 +16,4 @@ strum = { version = "0.26", features = ["derive"] }
 [dev-dependencies]
 anyhow = "1.0.79"
 assert_matches = "1.5"
+float_eq = "1.0.1"
