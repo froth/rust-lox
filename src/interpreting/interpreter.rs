@@ -34,15 +34,16 @@ fn is_truthy(value: Value) -> bool {
     }
 }
 
-fn check_number_operands(
+fn handle_numbers(
     left: &ExprWithContext,
     token: &Token,
     right: &ExprWithContext,
-) -> Result<(f32, f32)> {
+    f: fn(f32, f32) -> Value,
+) -> Result<Value> {
     let left_value = left.interpret();
     let right_value = right.interpret();
     match (left_value?, right_value?) {
-        (Value::Number(l), Value::Number(r)) => Ok((l, r)),
+        (Value::Number(l), Value::Number(r)) => Ok(f(l, r)),
         (Value::Number(_), value) => Err(SingleTypeMissmatch {
             operator: token.lexeme.clone(),
             expected: Type::Number,
@@ -78,45 +79,24 @@ fn interpret_binary(
     right: &ExprWithContext,
 ) -> Result<Value> {
     match token.token_type {
-        TokenType::Minus => {
-            let (l, r) = check_number_operands(left, token, right)?;
-            Ok(Value::Number(l - r))
-        }
-        TokenType::Slash => {
-            let (l, r) = check_number_operands(left, token, right)?;
-            Ok(Value::Number(l / r))
-        },
-        TokenType::Star => {
-            let (l, r) = check_number_operands(left, token, right)?;
-            Ok(Value::Number(l * r))
-        },
+        TokenType::Minus => handle_numbers(left, token, right, |l, r| (l - r).into()),
+        TokenType::Slash => handle_numbers(left, token, right, |l, r| (l / r).into()),
+        TokenType::Star => handle_numbers(left, token, right, |l, r| (l * r).into()),
         TokenType::Plus => todo!(),
-        TokenType::Greater => {
-            let (l, r) = check_number_operands(left, token, right)?;
-            Ok(Value::Boolean(l > r))
-        },
-        TokenType::GreaterEqual => {
-            let (l, r) = check_number_operands(left, token, right)?;
-            Ok(Value::Boolean(l >= r))
-        },
-        TokenType::Less => {
-            let (l, r) = check_number_operands(left, token, right)?;
-            Ok(Value::Boolean(l < r))
-        },
-        TokenType::LessEqual => {
-            let (l, r) = check_number_operands(left, token, right)?;
-            Ok(Value::Boolean(l <= r))
-        },
+        TokenType::Greater => handle_numbers(left, token, right, |l, r| (l > r).into()),
+        TokenType::GreaterEqual => handle_numbers(left, token, right, |l, r| (l >= r).into()),
+        TokenType::Less => handle_numbers(left, token, right, |l, r| (l < r).into()),
+        TokenType::LessEqual => handle_numbers(left, token, right, |l, r| (l <= r).into()),
         TokenType::BangEqual => {
             let l = left.interpret();
             let r = right.interpret();
             Ok(Value::Boolean(l? != r?))
-        },
+        }
         TokenType::EqualEqual => {
             let l = left.interpret();
             let r = right.interpret();
             Ok(Value::Boolean(l? == r?))
-        },
+        }
         _ => panic!("wrong token type in Expr::Binary, bug in parser"),
     }
 }
@@ -177,13 +157,13 @@ mod interpreter_tests {
     }
     #[test]
     fn minus_one() {
-        let expr = literal(Literal::Number(1.0));
+        let expr = literal(1.0.into());
         let expr = ExprWithContext::unary(token(TokenType::Minus), expr);
         assert_matches!(expr.interpret().unwrap(), Value::Number(number) if number == -1.0);
     }
     #[test]
     fn bang_one() {
-        let expr = literal(Literal::Number(1.0));
+        let expr = literal(1.0.into());
         let expr = ExprWithContext::unary(token(TokenType::Bang), expr);
         assert_matches!(expr.interpret().unwrap(), Value::Boolean(false));
     }
@@ -201,14 +181,14 @@ mod interpreter_tests {
     }
     #[test]
     fn five_minus_one() {
-        let one = literal(Literal::Number(1.0));
-        let five = literal(Literal::Number(5.0));
+        let one = literal(1.0.into());
+        let five = literal(5.0.into());
         let expr = ExprWithContext::binary(five, token(TokenType::Minus), one);
         assert_matches!(expr.interpret().unwrap(), Value::Number(number) if float_eq!(number, 4.0, ulps_all <= 4));
     }
     #[test]
     fn one_minus_string() {
-        let left = literal(Literal::Number(1.0));
+        let left = literal(1.0.into());
         let right = literal(Literal::String("sdfsdf".to_string()));
         let operator = token(TokenType::Minus);
         let expr = ExprWithContext::binary(left, operator, right);
@@ -221,10 +201,11 @@ mod interpreter_tests {
                 ..
             }
         );
-    }    #[test]
+    }
+    #[test]
     fn nil_equals_string() {
         let left = literal(Literal::Nil);
-        let right = literal(Literal::String("sdfsdf".to_string()));
+        let right = literal("sdfsdf".to_string().into());
         let operator = token(TokenType::EqualEqual);
         let expr = ExprWithContext::binary(left, operator, right);
         assert_matches!(expr.interpret().unwrap(), Value::Boolean(false));
@@ -232,7 +213,7 @@ mod interpreter_tests {
     #[test]
     fn string_minus_one() {
         let left = literal(Literal::String("sdfsdf".to_string()));
-        let right = literal(Literal::Number(1.0));
+        let right = literal(1.0.into());
         let operator = token(TokenType::Minus);
         let expr = ExprWithContext::binary(left, operator, right);
         assert_matches!(
@@ -247,7 +228,7 @@ mod interpreter_tests {
     }
     #[test]
     fn string_minus_nil() {
-        let left = literal(Literal::String("sdfsdf".to_string()));
+        let left = literal("sdfsdf".to_string().into());
         let right = literal(Literal::Nil);
         let operator = token(TokenType::Minus);
         let expr = ExprWithContext::binary(left, operator, right);
