@@ -44,7 +44,7 @@ fn handle_numbers(
     let right_value = right.interpret();
     match (left_value?, right_value?) {
         (Value::Number(l), Value::Number(r)) => Ok(f(l, r)),
-        (Value::Number(_), value) => Err(SingleTypeMissmatch {
+        (Value::Number(_), value) => Err(WrongType {
             operator: token.lexeme.clone(),
             expected: Type::Number,
             actual: value.into(),
@@ -52,7 +52,7 @@ fn handle_numbers(
             operator_location: token.location,
             operand_location: right.location,
         }),
-        (value, Value::Number(_)) => Err(SingleTypeMissmatch {
+        (value, Value::Number(_)) => Err(WrongType {
             operator: token.lexeme.clone(),
             expected: Type::Number,
             actual: value.into(),
@@ -60,7 +60,7 @@ fn handle_numbers(
             operator_location: token.location,
             operand_location: left.location,
         }),
-        (lhs, rhs) => Err(DoubleTypeMissmatch {
+        (lhs, rhs) => Err(WrongTypes {
             operator: token.lexeme.clone(),
             expected: Type::Number,
             actual_lhs: lhs.into(),
@@ -83,6 +83,27 @@ fn handle_values(
     Ok(Value::Boolean(f(l?, r?)))
 }
 
+fn handle_plus_binary(
+    left: &ExprWithContext,
+    token: &Token,
+    right: &ExprWithContext,
+) -> Result<Value> {
+    let l = left.interpret();
+    let r = right.interpret();
+    match (l?, r?) {
+        (Value::String(l), Value::String(r)) => Ok(Value::String(l + r.as_str())),
+        (Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
+        (l, r) => Err(PlusOperatorWrongTypes {
+            actual_lhs: l.into(),
+            actual_rhs: r.into(),
+            src: token.src.clone(),
+            operator_location: token.location,
+            lhs: left.location,
+            rhs: right.location,
+        }),
+    }
+}
+
 fn interpret_binary(
     left: &ExprWithContext,
     token: &Token,
@@ -92,7 +113,7 @@ fn interpret_binary(
         TokenType::Minus => handle_numbers(left, token, right, |l, r| (l - r).into()),
         TokenType::Slash => handle_numbers(left, token, right, |l, r| (l / r).into()),
         TokenType::Star => handle_numbers(left, token, right, |l, r| (l * r).into()),
-        TokenType::Plus => todo!(),
+        TokenType::Plus => handle_plus_binary(left, token, right),
         TokenType::Greater => handle_numbers(left, token, right, |l, r| (l > r).into()),
         TokenType::GreaterEqual => handle_numbers(left, token, right, |l, r| (l >= r).into()),
         TokenType::Less => handle_numbers(left, token, right, |l, r| (l < r).into()),
@@ -110,7 +131,7 @@ fn interpret_unary(token: &Token, expr: &ExprWithContext) -> Result<Value> {
             if let Value::Number(num) = right {
                 Ok(Value::Number(-num))
             } else {
-                Err(SingleTypeMissmatch {
+                Err(WrongType {
                     operator: token.lexeme.clone(),
                     expected: Type::Number,
                     actual: right.into(),
@@ -196,7 +217,7 @@ mod interpreter_tests {
         let expr = ExprWithContext::binary(left, operator, right);
         assert_matches!(
             expr.interpret().unwrap_err(),
-            SingleTypeMissmatch {
+            WrongType {
                 operator: _,
                 expected: Type::Number,
                 actual: Type::String,
@@ -220,7 +241,7 @@ mod interpreter_tests {
         let expr = ExprWithContext::binary(left, operator, right);
         assert_matches!(
             expr.interpret().unwrap_err(),
-            SingleTypeMissmatch {
+            WrongType {
                 operator: _,
                 expected: Type::Number,
                 actual: Type::String,
@@ -236,11 +257,41 @@ mod interpreter_tests {
         let expr = ExprWithContext::binary(left, operator, right);
         assert_matches!(
             expr.interpret().unwrap_err(),
-            DoubleTypeMissmatch {
+            WrongTypes {
                 operator: _,
                 expected: Type::Number,
                 actual_lhs: Type::String,
                 actual_rhs: Type::Nil,
+                ..
+            }
+        );
+    }
+    #[test]
+    fn string_plus_string() {
+        let left = literal("dogs ".to_string().into());
+        let right = literal("are good".to_string().into());
+        let operator = token(TokenType::Plus);
+        let expr = ExprWithContext::binary(left, operator, right);
+        assert_matches!(expr.interpret().unwrap(), Value::String(string) if  string == "dogs are good");
+    }
+    #[test]
+    fn five_plus() {
+        let one = literal(1.0.into());
+        let five = literal(5.0.into());
+        let expr = ExprWithContext::binary(five, token(TokenType::Plus), one);
+        assert_matches!(expr.interpret().unwrap(), Value::Number(number) if float_eq!(number, 6.0, ulps_all <= 4));
+    }
+    #[test]
+    fn string_plus_one() {
+        let left = literal(Literal::String("sdfsdf".to_string()));
+        let right = literal(1.0.into());
+        let operator = token(TokenType::Plus);
+        let expr = ExprWithContext::binary(left, operator, right);
+        assert_matches!(
+            expr.interpret().unwrap_err(),
+            PlusOperatorWrongTypes {
+                actual_lhs: Type::String,
+                actual_rhs: Type::Number,
                 ..
             }
         );
