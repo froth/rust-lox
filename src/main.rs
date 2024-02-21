@@ -18,7 +18,6 @@ mod parsing;
 mod printer;
 mod scanning;
 mod source_span_extensions;
-mod token;
 mod types;
 mod value;
 

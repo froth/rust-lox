@@ -3,7 +3,7 @@ use std::sync::Arc;
 use miette::NamedSource;
 use phf::phf_map;
 
-use crate::token::{Token, TokenType};
+use crate::ast::token::{Token, TokenType};
 
 use super::{
     error_combiner::ErrorCombiner,
@@ -213,7 +213,7 @@ impl Scanner {
 
         let text = &self.source[self.start..self.current];
         let token = KEYWORDS.get(text).cloned();
-        token.unwrap_or(TokenType::Identifier)
+        token.unwrap_or(TokenType::Identifier(text.to_string()))
     }
 }
 
@@ -224,7 +224,7 @@ mod scanner_tests {
     use crate::scanning::scanner_error::ScannerError;
 
     use super::Scanner;
-    use super::TokenType::*;
+    use crate::ast::token::TokenType::*;
 
     #[test]
     fn parse_string() {
@@ -250,8 +250,7 @@ mod scanner_tests {
         let result = scanner.scan_tokens().unwrap();
         let head = &result[0];
         let token_type = &head.token_type;
-        assert_matches!(token_type, Identifier);
-        assert_eq!(head.lexeme, input)
+        assert_matches!(token_type, Identifier(string) if string == &input);
     }
 
     #[test]

@@ -2,7 +2,7 @@ use std::{fmt::Display, sync::Arc};
 
 use miette::{NamedSource, SourceSpan};
 
-use super::expr::Expr;
+use super::expr::{Expr, Name};
 
 #[derive(Debug)]
 pub struct Stmt {
@@ -28,12 +28,20 @@ impl Stmt {
             src,
         }
     }
+
+    pub fn var(name: String, expr: Option<Expr>, location: SourceSpan, src: Arc<NamedSource<String>>) -> Self {
+        Stmt{
+            stmt_type: StmtType::Var(Name(name), expr),
+            src, location
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum StmtType {
     Expression(Expr),
     Print(Expr),
+    Var(Name, Option<Expr>)
 }
 
 impl Display for Stmt {
@@ -43,6 +51,8 @@ impl Display for Stmt {
                 writeln!(f, "Expr{}", expr)
             }
             StmtType::Print(expr) => writeln!(f, "Print{}", expr),
+            StmtType::Var(name, Some(expr)) => writeln!(f, "Var {} = {}", name, expr),
+            StmtType::Var(name, None) => writeln!(f, "Var {}", name),
         }
     }
 }

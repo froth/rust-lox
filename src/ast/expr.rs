@@ -2,7 +2,7 @@ use std::{fmt::Display, sync::Arc};
 
 use miette::{NamedSource, SourceSpan};
 
-use crate::{source_span_extensions::SourceSpanExtensions, token::Token};
+use crate::{source_span_extensions::SourceSpanExtensions, ast::token::Token};
 
 #[derive(Debug)]
 pub struct Expr {
@@ -46,6 +46,16 @@ impl Expr {
             src,
         }
     }
+
+    pub fn variable(name: String, token: Token) -> Self {
+        let src = token.src.clone();
+        let location = token.location;
+        Self {
+            expr_type: ExprType::variable(name),
+            location,
+            src,
+        }
+    }
 }
 
 impl Display for Expr {
@@ -72,7 +82,13 @@ pub enum ExprType {
 }
 
 #[derive(Debug)]
-pub struct Name(String);
+pub struct Name(pub String);
+
+impl Display for Name {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl ExprType {
     pub fn binary(left: Expr, token: Token, right: Expr) -> ExprType {
@@ -89,6 +105,10 @@ impl ExprType {
 
     pub fn unary(token: Token, expr: Expr) -> ExprType {
         Self::Unary(token, Box::new(expr))
+    }
+
+    pub fn variable(name: String) -> ExprType {
+        Self::Variable(Name(name))
     }
 }
 

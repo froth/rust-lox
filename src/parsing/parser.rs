@@ -1,11 +1,13 @@
+use std::sync::Arc;
 use std::vec;
+
+use miette::{NamedSource, SourceSpan};
 
 use crate::ast::expr::Expr;
 use crate::ast::expr::Literal::{self};
 use crate::ast::stmt::Stmt;
 use crate::source_span_extensions::SourceSpanExtensions;
-use crate::token::TokenType;
-use crate::{ast::expr::ExprType, token::Token};
+use crate::ast::{expr::ExprType,token::{Token, TokenType}};
 
 use super::parser_error::ParserError::{self, *};
 use super::parser_error::ParserErrors;
@@ -67,7 +69,29 @@ impl Parser {
     }
 
     fn declaration(&mut self) -> Result<Stmt> {
-        self.statement()
+        use TokenType::*;
+        match self.peek().token_type {
+            Var => self.var_declaration(),
+            _ => self.statement(),
+        }
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt> {
+        let var_location = self.advance().location;
+        let peek = self.peek();
+        let src = peek.src.clone();
+        if let TokenType::Identifier(name) = &peek.token_type {
+            let name = name.clone();
+            self.advance();
+            let mut expr = None;
+            if match_token!(self, TokenType::Equal).is_some() {
+                expr = Some(self.expression()?)
+            }
+            let semicolon_location = self.expect_semicolon(var_location, src.clone())?;
+            Ok(Stmt::var(name, expr, var_location.until(semicolon_location), src))
+        } else {
+            Err(ExpectedIdentifier { src: peek.src.clone(), location: peek.location })
+        }
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -80,29 +104,17 @@ impl Parser {
 
     fn expression_statement(&mut self) -> Result<Stmt> {
         let expr = self.expression()?;
-        if let Some(semicolon) = match_token!(self, TokenType::Semicolon) {
-            let location = expr.location.until(semicolon.location);
-            Ok(Stmt::expr(expr, location))
-        } else {
-            Err(ExpectedSemicolon {
-                src: expr.src,
-                location: expr.location,
-            })
-        }
+        let semicolon_location = self.expect_semicolon(expr.location, expr.src.clone())?;
+        let location = expr.location.until(semicolon_location);
+        Ok(Stmt::expr(expr, location))
     }
 
     fn print_statement(&mut self) -> Result<Stmt> {
         let print_token_location = self.advance().location;
         let expr = self.expression()?;
-        if let Some(semicolon) = match_token!(self, TokenType::Semicolon) {
-            let location = print_token_location.until(semicolon.location);
-            Ok(Stmt::print(expr, location))
-        } else {
-            Err(ExpectedSemicolon {
-                src: expr.src,
-                location: expr.location,
-            })
-        }
+        let semicolon_location = self.expect_semicolon(expr.location, expr.src.clone())?;
+        let location = print_token_location.until(semicolon_location);
+        Ok(Stmt::print(expr, location))
     }
 
     fn expression(&mut self) -> Result<Expr> {
@@ -169,7 +181,7 @@ impl Parser {
             Nil => Expr::literal(Literal::Nil, &token),
             Number(n) => Expr::literal(Literal::Number(n), &token),
             String(s) => Expr::literal(Literal::String(s), &token),
-            Identifier => todo!(),
+            Identifier(name) => Expr::variable(name, token),
             LeftParen => {
                 let expr = self.expression()?;
                 let peek = self.peek().clone();
@@ -199,6 +211,7 @@ impl Parser {
         };
         Ok(expr)
     }
+
     fn advance(&mut self) -> &Token {
         let current = self.current;
         if !self.is_at_end() {
@@ -218,6 +231,19 @@ impl Parser {
     fn previous(&mut self) -> &Token {
         &self.tokens[self.current - 1]
     }
+
+    fn expect_semicolon(&mut self, last_location: SourceSpan, src: Arc<NamedSource<String>> ) -> Result<SourceSpan> {
+        if let Some(semicolon) = match_token!(self, TokenType::Semicolon) {
+            let location = semicolon.location;
+            Ok(location)
+        } else {
+            Err(ExpectedSemicolon {
+                src,
+                location: last_location,
+            })
+        }
+    }
+
 }
 
 #[cfg(test)]
@@ -227,7 +253,7 @@ mod parser_tests {
 
     use crate::{
         parsing::parser_error::ParserError,
-        token::{Token, TokenType},
+        ast::token::{Token, TokenType},
     };
 
     use super::Parser;
@@ -341,6 +367,36 @@ mod parser_tests {
                 location: _,
             }
         )
+    }
+
+    #[test]
+    fn parse_variable_declaration() {
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Var),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let mut parser = Parser::new(tokens);
+        let stmt = &parser.parse().unwrap()[0];
+        assert_eq!(stmt.to_string().trim_end(), "Var name")
+    }
+
+    #[test]
+    fn parse_variable_initialisation() {
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Var),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Equal),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let mut parser = Parser::new(tokens);
+        let stmt = &parser.parse().unwrap()[0];
+        assert_eq!(stmt.to_string().trim_end(), "Var name = (nil)")
     }
 
     #[test]
