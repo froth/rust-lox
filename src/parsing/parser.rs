@@ -8,6 +8,7 @@ use crate::token::TokenType;
 use crate::{ast::expr::ExprType, token::Token};
 
 use super::parser_error::ParserError::{self, *};
+use super::parser_error::ParserErrors;
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -28,20 +29,25 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Vec<Stmt>> {
+    pub fn parse(&mut self) -> core::result::Result<Vec<Stmt>, ParserErrors> {
         let mut statements = vec![];
+        let mut errors = vec![];
         while !self.is_at_end() {
-            statements.push(self.statement()?)
+            match self.declaration() {
+                Ok(stmt) => statements.push(stmt),
+                Err(err) => {
+                    self.synchronize();
+                    errors.push(err)
+                }
+            }
         }
-        Ok(statements)
-
-        // match self.expression() {
-        //     Ok(res) => Ok(res),
-        //     Err(err) => {
-        //         self.synchronize(); // TODO: does not make sense yet as we can only parse single expressions
-        //         Err(err)
-        //     }
-        // }
+        if errors.is_empty() {
+            Ok(statements)
+        } else {
+            Err(ParserErrors {
+                parser_errors: errors,
+            })
+        }
     }
 
     fn synchronize(&mut self) {
@@ -58,6 +64,10 @@ impl Parser {
             }
             self.advance();
         }
+    }
+
+    fn declaration(&mut self) -> Result<Stmt> {
+        self.statement()
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -323,7 +333,7 @@ mod parser_tests {
             token(TokenType::Eof),
         ];
         let mut parser = Parser::new(tokens);
-        let err = parser.parse().unwrap_err();
+        let err = &parser.parse().unwrap_err().parser_errors[0];
         assert_matches!(
             err,
             ParserError::ExpectedRightParan {
@@ -333,7 +343,36 @@ mod parser_tests {
         )
     }
 
-    // TODO: test for synchronize
+    #[test]
+    fn synchronization_works() {
+        let string: String = "foo".into();
+        let tokens = vec![
+            token(TokenType::LeftParen),
+            token(TokenType::String(string.clone())),
+            token(TokenType::Semicolon),
+            token(TokenType::LeftParen),
+            token(TokenType::String(string.clone())),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let mut parser = Parser::new(tokens);
+        let errors = parser.parse().unwrap_err();
+        assert_eq!(errors.parser_errors.len(), 2);
+        assert_matches!(
+            &errors.parser_errors[0],
+            ParserError::ExpectedRightParan {
+                src: _,
+                location: _,
+            }
+        );
+        assert_matches!(
+            &errors.parser_errors[1],
+            ParserError::ExpectedRightParan {
+                src: _,
+                location: _,
+            }
+        )
+    }
 
     fn token(token_type: TokenType) -> Token {
         Token {
