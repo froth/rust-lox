@@ -5,43 +5,43 @@ use miette::{NamedSource, SourceSpan};
 use crate::{source_span_extensions::SourceSpanExtensions, token::Token};
 
 #[derive(Debug)]
-pub struct ExprWithContext {
-    pub expr: Expr,
+pub struct Expr {
+    pub expr_type: ExprType,
     pub location: SourceSpan,
     pub src: Arc<NamedSource<String>>,
 }
 
-impl ExprWithContext {
-    pub fn new(expr: Expr, location: SourceSpan, src: Arc<NamedSource<String>>) -> Self {
+impl Expr {
+    pub fn new(expr_type: ExprType, location: SourceSpan, src: Arc<NamedSource<String>>) -> Self {
         Self {
-            expr,
+            expr_type,
             location,
             src,
         }
     }
     pub fn literal(literal: Literal, token: &Token) -> Self {
         Self {
-            expr: Expr::literal(literal),
+            expr_type: ExprType::literal(literal),
             location: token.location,
             src: token.src.clone(),
         }
     }
 
-    pub fn unary(token: Token, expr: ExprWithContext) -> Self {
+    pub fn unary(token: Token, expr: Expr) -> Self {
         let src = token.src.clone();
         let location = token.location.until(expr.location);
         Self {
-            expr: Expr::unary(token, expr),
+            expr_type: ExprType::unary(token, expr),
             location,
             src,
         }
     }
 
-    pub fn binary(left: ExprWithContext, token: Token, right: ExprWithContext) -> Self {
+    pub fn binary(left: Expr, token: Token, right: Expr) -> Self {
         let src = token.src.clone();
         let location = left.location.until(right.location);
         Self {
-            expr: Expr::binary(left, token, right),
+            expr_type: ExprType::binary(left, token, right),
             location,
             src,
         }
@@ -49,40 +49,40 @@ impl ExprWithContext {
 }
 
 #[derive(Debug)]
-pub enum Expr {
-    Binary(Box<ExprWithContext>, Token, Box<ExprWithContext>),
-    Grouping(Box<ExprWithContext>),
+pub enum ExprType {
+    Binary(Box<Expr>, Token, Box<Expr>),
+    Grouping(Box<Expr>),
     Literal(Literal),
-    Unary(Token, Box<ExprWithContext>),
+    Unary(Token, Box<Expr>),
 }
 
-impl Expr {
-    pub fn binary(left: ExprWithContext, token: Token, right: ExprWithContext) -> Expr {
+impl ExprType {
+    pub fn binary(left: Expr, token: Token, right: Expr) -> ExprType {
         Self::Binary(Box::new(left), token, Box::new(right))
     }
 
-    pub fn grouping(expr: ExprWithContext) -> Expr {
+    pub fn grouping(expr: Expr) -> ExprType {
         Self::Grouping(Box::new(expr))
     }
 
-    pub fn literal(literal: Literal) -> Expr {
+    pub fn literal(literal: Literal) -> ExprType {
         Self::Literal(literal)
     }
 
-    pub fn unary(token: Token, expr: ExprWithContext) -> Expr {
+    pub fn unary(token: Token, expr: Expr) -> ExprType {
         Self::Unary(token, Box::new(expr))
     }
 }
 
-impl Display for ExprWithContext {
+impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.expr {
-            Expr::Binary(left, token, right) => {
+        match &self.expr_type {
+            ExprType::Binary(left, token, right) => {
                 write!(f, "({} {} {})", token.token_type, left, right)
             }
-            Expr::Grouping(expr) => write!(f, "(group {})", expr),
-            Expr::Literal(literal) => write!(f, "({})", literal),
-            Expr::Unary(token, right) => write!(f, "({} {})", token.token_type, right),
+            ExprType::Grouping(expr) => write!(f, "(group {})", expr),
+            ExprType::Literal(literal) => write!(f, "({})", literal),
+            ExprType::Unary(token, right) => write!(f, "({} {})", token.token_type, right),
         }
     }
 }
