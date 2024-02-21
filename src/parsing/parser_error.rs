@@ -41,5 +41,5 @@ pub enum ParserError {
 #[error("Errors while parsing")]
 pub struct ParserErrors {
     #[related]
-    pub scanner_errors: Vec<ParserError>,
+    pub parser_errors: Vec<ParserError>,
 }
