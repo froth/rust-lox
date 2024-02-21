@@ -1,8 +1,8 @@
-use crate::ast::expr::ExprWithContext;
+use crate::ast::expr::Expr;
 use crate::ast::expr::Literal::{self};
 use crate::source_span_extensions::SourceSpanExtensions;
 use crate::token::TokenType;
-use crate::{ast::expr::Expr, token::Token};
+use crate::{ast::expr::ExprType, token::Token};
 
 use super::parser_error::ParserError::{self, *};
 
@@ -16,7 +16,7 @@ impl Parser {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<ExprWithContext> {
+    pub fn parse(&mut self) -> Result<Expr> {
         assert!(self
             .tokens
             .last()
@@ -46,22 +46,22 @@ impl Parser {
         }
     }
 
-    fn expression(&mut self) -> Result<ExprWithContext> {
+    fn expression(&mut self) -> Result<Expr> {
         self.equality()
     }
 
-    fn equality(&mut self) -> Result<ExprWithContext> {
+    fn equality(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.comparision()?;
         while matches!(self.peek().token_type, BangEqual | EqualEqual) {
             let operator = self.advance().clone();
             let right = self.comparision()?;
-            expr = ExprWithContext::binary(expr, operator, right)
+            expr = Expr::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn comparision(&mut self) -> Result<ExprWithContext> {
+    fn comparision(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.term()?;
         while matches!(
@@ -70,52 +70,52 @@ impl Parser {
         ) {
             let operator = self.advance().clone();
             let right = self.term()?;
-            expr = ExprWithContext::binary(expr, operator, right)
+            expr = Expr::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn term(&mut self) -> Result<ExprWithContext> {
+    fn term(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.factor()?;
         while matches!(self.peek().token_type, Minus | Plus) {
             let operator = self.advance().clone();
             let right = self.factor()?;
-            expr = ExprWithContext::binary(expr, operator, right)
+            expr = Expr::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn factor(&mut self) -> Result<ExprWithContext> {
+    fn factor(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.unary()?;
         while matches!(self.peek().token_type, Slash | Star) {
             let operator = self.advance().clone();
             let right = self.unary()?;
-            expr = ExprWithContext::binary(expr, operator, right)
+            expr = Expr::binary(expr, operator, right)
         }
         Ok(expr)
     }
 
-    fn unary(&mut self) -> Result<ExprWithContext> {
+    fn unary(&mut self) -> Result<Expr> {
         use TokenType::*;
         if matches!(self.peek().token_type, Bang | Minus) {
             let operator = self.advance().clone();
-            Ok(ExprWithContext::unary(operator, self.unary()?))
+            Ok(Expr::unary(operator, self.unary()?))
         } else {
             self.primary()
         }
     }
 
-    fn primary(&mut self) -> Result<ExprWithContext> {
+    fn primary(&mut self) -> Result<Expr> {
         use TokenType::*;
         let token = self.advance().clone();
         let expr = match token.token_type.clone() {
-            False => ExprWithContext::literal(Literal::Boolean(false), &token),
-            True => ExprWithContext::literal(Literal::Boolean(true), &token),
-            Nil => ExprWithContext::literal(Literal::Nil, &token),
-            Number(n) => ExprWithContext::literal(Literal::Number(n), &token),
-            String(s) => ExprWithContext::literal(Literal::String(s), &token),
+            False => Expr::literal(Literal::Boolean(false), &token),
+            True => Expr::literal(Literal::Boolean(true), &token),
+            Nil => Expr::literal(Literal::Nil, &token),
+            Number(n) => Expr::literal(Literal::Number(n), &token),
+            String(s) => Expr::literal(Literal::String(s), &token),
             LeftParen => {
                 let expr = self.expression()?;
                 let peek = self.peek().clone();
@@ -128,7 +128,7 @@ impl Parser {
                     })?
                 }
                 let location = token.location.until(peek.location);
-                ExprWithContext::new(Expr::grouping(expr), location, token.src)
+                Expr::new(ExprType::grouping(expr), location, token.src)
             }
             Eof => Err(UnexpectedEof {
                 src: token.src.clone(),
