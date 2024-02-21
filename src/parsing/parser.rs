@@ -102,7 +102,7 @@ impl Parser {
     fn equality(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.comparision()?;
-        while let Some(token) = match_token!(self,  BangEqual | EqualEqual).cloned() {
+        while let Some(token) = match_token!(self, BangEqual | EqualEqual).cloned() {
             let right = self.comparision()?;
             expr = Expr::binary(expr, token, right)
         }
@@ -159,6 +159,7 @@ impl Parser {
             Nil => Expr::literal(Literal::Nil, &token),
             Number(n) => Expr::literal(Literal::Number(n), &token),
             String(s) => Expr::literal(Literal::String(s), &token),
+            Identifier => todo!(),
             LeftParen => {
                 let expr = self.expression()?;
                 let peek = self.peek().clone();

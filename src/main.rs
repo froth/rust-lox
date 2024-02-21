@@ -12,15 +12,15 @@ use printer::ConsolePrinter;
 
 mod args;
 mod ast;
-mod interpreting;
+mod interpreter;
 mod lox;
 mod parsing;
+mod printer;
 mod scanning;
 mod source_span_extensions;
 mod token;
 mod types;
 mod value;
-mod printer;
 
 fn main() {
     let args = Args::parse();
@@ -56,7 +56,8 @@ fn run_prompt() -> miette::Result<()> {
             0 => return Ok(()),
             _ => {
                 let source = buf.trim_end().to_string();
-                lox.run_stdin(source).unwrap_or_else(|err| eprintln!("{:?}", err));
+                lox.run_stdin(source)
+                    .unwrap_or_else(|err| eprintln!("{:?}", err));
             }
         }
     }
