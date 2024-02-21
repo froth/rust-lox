@@ -17,9 +17,12 @@ impl Lox {
         let tokens = scanner.scan_tokens()?;
         // tokens.iter().for_each(|x| println!("{:?}", x));
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse()?;
+        let statements = parser.parse()?;
+        statements.iter().for_each(|stmt| print!("{}", stmt));
+
         // println!("{}", expr);
-        let value = expr.interpret()?;
-        Ok(value)
+        // let value = expr.interpret()?;
+        // Ok(value)
+        todo!("fix interpreter")
     }
 }

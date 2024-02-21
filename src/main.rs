@@ -10,6 +10,7 @@ use args::Args;
 use miette::{IntoDiagnostic, NamedSource};
 
 mod args;
+mod ast;
 mod interpreting;
 mod lox;
 mod parsing;
@@ -18,7 +19,6 @@ mod source_span_extensions;
 mod token;
 mod types;
 mod value;
-mod ast;
 
 fn main() {
     let args = Args::parse();
