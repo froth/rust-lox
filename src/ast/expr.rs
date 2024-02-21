@@ -57,6 +57,7 @@ impl Display for Expr {
             ExprType::Grouping(expr) => write!(f, "(group {})", expr),
             ExprType::Literal(literal) => write!(f, "({})", literal),
             ExprType::Unary(token, right) => write!(f, "({} {})", token.token_type, right),
+            ExprType::Variable(name) => write!(f, "(variable {})", name.0),
         }
     }
 }
@@ -67,7 +68,11 @@ pub enum ExprType {
     Grouping(Box<Expr>),
     Literal(Literal),
     Unary(Token, Box<Expr>),
+    Variable(Name),
 }
+
+#[derive(Debug)]
+pub struct Name(String);
 
 impl ExprType {
     pub fn binary(left: Expr, token: Token, right: Expr) -> ExprType {

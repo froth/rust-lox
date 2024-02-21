@@ -11,31 +11,32 @@ impl Printer for ConsolePrinter {
     }
 }
 
-
 #[cfg(test)]
-pub mod vec_printer{
+pub mod vec_printer {
     use std::cell::RefCell;
 
     use crate::value::Value;
 
     use super::Printer;
 
-pub struct VecPrinter{
-    lines: RefCell<Vec<Value>>
-}
+    pub struct VecPrinter {
+        lines: RefCell<Vec<Value>>,
+    }
 
-impl VecPrinter {
-    pub fn new() -> Self {
-        Self { lines: vec![].into() }
+    impl VecPrinter {
+        pub fn new() -> Self {
+            Self {
+                lines: vec![].into(),
+            }
+        }
+        pub fn get_lines(&self) -> Vec<Value> {
+            self.lines.borrow().clone()
+        }
     }
-    pub fn get_lines(&self) -> Vec<Value> {
-        self.lines.borrow().clone()
-    }
-}
 
-impl Printer for VecPrinter{
-    fn print(&self, value: Value) {
-        self.lines.borrow_mut().push(value)
+    impl Printer for VecPrinter {
+        fn print(&self, value: Value) {
+            self.lines.borrow_mut().push(value)
+        }
     }
-}
 }

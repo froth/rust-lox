@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use miette::NamedSource;
 
-use crate::{interpreting::Interpreter, parsing::Parser, printer::Printer, scanning::Scanner};
+use crate::{interpreter::Interpreter, parsing::Parser, printer::Printer, scanning::Scanner};
 
 pub struct Lox<'a> {
-    printer: &'a dyn Printer
+    printer: &'a dyn Printer,
 }
 
-impl <'a> Lox<'a> {
+impl<'a> Lox<'a> {
     pub fn new(printer: &'a impl Printer) -> Self {
         Self { printer }
     }
