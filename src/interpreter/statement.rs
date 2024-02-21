@@ -3,17 +3,19 @@ use crate::{
     printer::Printer,
 };
 
-use super::expression::ExprInterpreter;
+use super::{environment::Environment, expression::ExprInterpreter};
 use super::Result;
 
 pub struct StmtInterpreter<'a> {
     printer: &'a dyn Printer,
+    environment: Environment,
     expr_interpreter: ExprInterpreter,
 }
 impl<'a> StmtInterpreter<'a> {
-    pub fn new(printer: &'a dyn Printer) -> Self {
+    pub fn new(printer: &'a dyn Printer, environment: Environment) -> Self {
         Self {
             printer,
+            environment,
             expr_interpreter: ExprInterpreter::new(),
         }
     }
@@ -37,11 +39,10 @@ mod stmt_interpreter_tests {
     use crate::{
         ast::{
             expr::{Expr, Literal},
-            stmt::Stmt,
+            stmt::Stmt, token::{Token, TokenType},
         },
-        interpreter::statement::StmtInterpreter,
+        interpreter::{environment::Environment, statement::StmtInterpreter},
         printer::vec_printer::VecPrinter,
-        ast::token::{Token, TokenType},
     };
 
     #[test]
@@ -51,7 +52,7 @@ mod stmt_interpreter_tests {
             literal(Literal::String("string".to_string())),
             (0, 1).into(),
         );
-        let interpreter = StmtInterpreter::new(&printer);
+        let interpreter = StmtInterpreter::new(&printer, Environment::new());
         interpreter.interpret(stmt).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
     }
