@@ -1,3 +1,4 @@
+use crate::ast::stmt::{Stmt, StmtType};
 use crate::token::TokenType;
 use crate::types::Type;
 use crate::value::Value;
@@ -10,17 +11,26 @@ use super::runtime_error::RuntimeError;
 use super::runtime_error::RuntimeError::*;
 
 type Result<T> = std::result::Result<T, RuntimeError>;
-pub trait Interpreter {
-    fn interpret(&self) -> Result<Value>;
+pub trait Interpreter<T> {
+    fn interpret(&self) -> Result<T>;
 }
 
-impl Interpreter for Expr {
+impl Interpreter<Value> for Expr {
     fn interpret(&self) -> Result<Value> {
         match &self.expr_type {
             ExprType::Binary(left, token, right) => interpret_binary(left, token, right),
             ExprType::Grouping(expr) => expr.interpret(),
             ExprType::Literal(l) => l.interpret(),
             ExprType::Unary(token, expr) => interpret_unary(token, expr),
+        }
+    }
+}
+
+impl Interpreter<()> for Stmt {
+    fn interpret(&self) -> Result<()> {
+        match &self.stmt_type {
+            StmtType::Expression(expr) => expr.interpret().map(|_| ()),
+            StmtType::Print(expr) => expr.interpret().map(|value| println!("{}",value)),
         }
     }
 }
@@ -133,7 +143,7 @@ fn interpret_unary(token: &Token, expr: &Expr) -> Result<Value> {
     }
 }
 
-impl Interpreter for Literal {
+impl Interpreter<Value> for Literal {
     fn interpret(&self) -> Result<Value> {
         Ok(match self {
             Literal::String(s) => Value::String(s.clone()),

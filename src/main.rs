@@ -40,9 +40,7 @@ fn run_file(file: String) -> miette::Result<()> {
 
     let named_source = NamedSource::new(file, contents.clone());
     let lox = Lox::new();
-    let value = lox.run(contents, named_source)?;
-    println!("{}", value);
-    Ok(())
+    lox.run(contents, named_source)
 }
 
 fn run_prompt() -> miette::Result<()> {
@@ -57,10 +55,7 @@ fn run_prompt() -> miette::Result<()> {
             _ => {
                 let source = buf.trim_end().to_string();
                 let named_source: NamedSource<String> = NamedSource::new("stdin", source.clone());
-                match lox.run(source, named_source) {
-                    Ok(value) => println!("{}", value),
-                    Err(err) => eprintln!("{:?}", err),
-                }
+                lox.run(source, named_source).unwrap_or_else(|err| eprintln!("{:?}", err));
             }
         }
     }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use miette::NamedSource;
 
-use crate::{interpreting::Interpreter, parsing::Parser, scanning::Scanner, value::Value};
+use crate::{interpreting::Interpreter, parsing::Parser, scanning::Scanner};
 
 pub struct Lox {}
 
@@ -11,7 +11,7 @@ impl Lox {
         Self {}
     }
 
-    pub fn run(&self, source: String, named_source: NamedSource<String>) -> miette::Result<Value> {
+    pub fn run(&self, source: String, named_source: NamedSource<String>) -> miette::Result<()> {
         let named_source: Arc<NamedSource<String>> = named_source.into();
         let mut scanner = Scanner::new(source, named_source.clone());
         let tokens = scanner.scan_tokens()?;
@@ -19,10 +19,7 @@ impl Lox {
         let mut parser = Parser::new(tokens);
         let statements = parser.parse()?;
         statements.iter().for_each(|stmt| print!("{}", stmt));
-
-        // println!("{}", expr);
-        // let value = expr.interpret()?;
-        // Ok(value)
-        todo!("fix interpreter")
+        statements.iter().try_for_each(|stmt| stmt.interpret())?;
+        Ok(())
     }
 }
