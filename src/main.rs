@@ -8,6 +8,7 @@ use lox::Lox;
 
 use args::Args;
 use miette::{IntoDiagnostic, NamedSource};
+use printer::ConsolePrinter;
 
 mod args;
 mod ast;
@@ -19,6 +20,7 @@ mod source_span_extensions;
 mod token;
 mod types;
 mod value;
+mod printer;
 
 fn main() {
     let args = Args::parse();
@@ -39,13 +41,13 @@ fn run_file(file: String) -> miette::Result<()> {
     let contents = fs::read_to_string(file.clone()).into_diagnostic()?;
 
     let named_source = NamedSource::new(file, contents.clone());
-    let lox = Lox::new();
+    let lox = Lox::new(&ConsolePrinter);
     lox.run(contents, named_source)
 }
 
 fn run_prompt() -> miette::Result<()> {
     let std = io::stdin();
-    let lox = Lox::new();
+    let lox = Lox::new(&ConsolePrinter);
     loop {
         print!("> ");
         io::stdout().flush().into_diagnostic()?;
@@ -54,8 +56,7 @@ fn run_prompt() -> miette::Result<()> {
             0 => return Ok(()),
             _ => {
                 let source = buf.trim_end().to_string();
-                let named_source: NamedSource<String> = NamedSource::new("stdin", source.clone());
-                lox.run(source, named_source).unwrap_or_else(|err| eprintln!("{:?}", err));
+                lox.run_stdin(source).unwrap_or_else(|err| eprintln!("{:?}", err));
             }
         }
     }
