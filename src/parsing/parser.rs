@@ -1,8 +1,8 @@
-use crate::expr::ExprWithContext;
-use crate::expr::Literal::{self};
+use crate::ast::expr::ExprWithContext;
+use crate::ast::expr::Literal::{self};
 use crate::source_span_extensions::SourceSpanExtensions;
 use crate::token::TokenType;
-use crate::{expr::Expr, token::Token};
+use crate::{ast::expr::Expr, token::Token};
 
 use super::parser_error::ParserError::{self, *};
 

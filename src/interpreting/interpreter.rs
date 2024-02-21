@@ -1,9 +1,8 @@
-use crate::expr::ExprWithContext;
 use crate::token::TokenType;
 use crate::types::Type;
 use crate::value::Value;
 use crate::{
-    expr::{Expr, Literal},
+    ast::expr::{Expr, Literal, ExprWithContext},
     token::Token,
 };
 
@@ -164,7 +163,7 @@ mod interpreter_tests {
     use miette::NamedSource;
 
     use crate::{
-        expr::{ExprWithContext, Literal},
+        ast::expr::{ExprWithContext, Literal},
         interpreting::runtime_error::RuntimeError::*,
         token::{Token, TokenType},
         types::Type,
