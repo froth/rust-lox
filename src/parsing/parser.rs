@@ -1,5 +1,8 @@
+use std::vec;
+
 use crate::ast::expr::Expr;
 use crate::ast::expr::Literal::{self};
+use crate::ast::stmt::Stmt;
 use crate::source_span_extensions::SourceSpanExtensions;
 use crate::token::TokenType;
 use crate::{ast::expr::ExprType, token::Token};
@@ -10,24 +13,35 @@ pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
 }
+
+macro_rules! match_token {
+    ($self:ident, $pattern:pat $(if $guard:expr)?) => {
+        match $self.peek().token_type {
+            $pattern $(if $guard)? => Some($self.advance()),
+            _ => None
+        }
+    };
+}
 pub type Result<T> = core::result::Result<T, ParserError>;
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> Result<Expr> {
-        assert!(self
-            .tokens
-            .last()
-            .is_some_and(|t| matches!(t.token_type, TokenType::Eof)));
-        match self.expression() {
-            Ok(res) => Ok(res),
-            Err(err) => {
-                self.synchronize(); // TODO: does not make sense yet as we can only parse single expressions
-                Err(err)
-            }
+    pub fn parse(&mut self) -> Result<Vec<Stmt>> {
+        let mut statements = vec![];
+        while !self.is_at_end() {
+            statements.push(self.statement()?)
         }
+        Ok(statements)
+
+        // match self.expression() {
+        //     Ok(res) => Ok(res),
+        //     Err(err) => {
+        //         self.synchronize(); // TODO: does not make sense yet as we can only parse single expressions
+        //         Err(err)
+        //     }
+        // }
     }
 
     fn synchronize(&mut self) {
@@ -46,6 +60,41 @@ impl Parser {
         }
     }
 
+    fn statement(&mut self) -> Result<Stmt> {
+        use TokenType::*;
+        match self.peek().token_type {
+            Print => self.print_statement(),
+            _ => self.expression_statement(),
+        }
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt> {
+        let expr = self.expression()?;
+        if let Some(semicolon) = match_token!(self, TokenType::Semicolon) {
+            let location = expr.location.until(semicolon.location);
+            Ok(Stmt::expr(expr, location))
+        } else {
+            Err(ExpectedSemicolon {
+                src: expr.src,
+                location: expr.location,
+            })
+        }
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt> {
+        let print_token_location = self.advance().location;
+        let expr = self.expression()?;
+        if let Some(semicolon) = match_token!(self, TokenType::Semicolon) {
+            let location = print_token_location.until(semicolon.location);
+            Ok(Stmt::print(expr, location))
+        } else {
+            Err(ExpectedSemicolon {
+                src: expr.src,
+                location: expr.location,
+            })
+        }
+    }
+
     fn expression(&mut self) -> Result<Expr> {
         self.equality()
     }
@@ -53,10 +102,9 @@ impl Parser {
     fn equality(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.comparision()?;
-        while matches!(self.peek().token_type, BangEqual | EqualEqual) {
-            let operator = self.advance().clone();
+        while let Some(token) = match_token!(self,  BangEqual | EqualEqual).cloned() {
             let right = self.comparision()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, token, right)
         }
         Ok(expr)
     }
@@ -64,13 +112,11 @@ impl Parser {
     fn comparision(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.term()?;
-        while matches!(
-            self.peek().token_type,
-            Greater | GreaterEqual | Less | LessEqual
-        ) {
-            let operator = self.advance().clone();
+        while let Some(token) =
+            match_token!(self, Greater | GreaterEqual | Less | LessEqual).cloned()
+        {
             let right = self.term()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, token, right)
         }
         Ok(expr)
     }
@@ -78,10 +124,9 @@ impl Parser {
     fn term(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.factor()?;
-        while matches!(self.peek().token_type, Minus | Plus) {
-            let operator = self.advance().clone();
+        while let Some(token) = match_token!(self, Minus | Plus).cloned() {
             let right = self.factor()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, token, right)
         }
         Ok(expr)
     }
@@ -89,19 +134,17 @@ impl Parser {
     fn factor(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.unary()?;
-        while matches!(self.peek().token_type, Slash | Star) {
-            let operator = self.advance().clone();
+        while let Some(token) = match_token!(self, Slash | Star).cloned() {
             let right = self.unary()?;
-            expr = Expr::binary(expr, operator, right)
+            expr = Expr::binary(expr, token, right)
         }
         Ok(expr)
     }
 
     fn unary(&mut self) -> Result<Expr> {
         use TokenType::*;
-        if matches!(self.peek().token_type, Bang | Minus) {
-            let operator = self.advance().clone();
-            Ok(Expr::unary(operator, self.unary()?))
+        if let Some(token) = match_token!(self, Bang | Minus).cloned() {
+            Ok(Expr::unary(token, self.unary()?))
         } else {
             self.primary()
         }
@@ -183,11 +226,26 @@ mod parser_tests {
         let string: String = "foo".into();
         let tokens = vec![
             token(TokenType::String(string.clone())),
+            token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse().unwrap();
-        assert_eq!(expr.to_string(), r#"("foo")"#);
+        let stmt = &parser.parse().unwrap()[0];
+        assert_eq!(stmt.to_string().trim_end(), r#"Expr("foo")"#);
+    }
+
+    #[test]
+    fn parse_print_string() {
+        let string: String = "foo".into();
+        let tokens = vec![
+            token(TokenType::Print),
+            token(TokenType::String(string.clone())),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let mut parser = Parser::new(tokens);
+        let stmt = &parser.parse().unwrap()[0];
+        assert_eq!(stmt.to_string().trim_end(), r#"Print("foo")"#);
     }
 
     #[test]
@@ -195,11 +253,8 @@ mod parser_tests {
         let token = token(TokenType::Eof);
         let tokens = vec![token.clone()];
         let mut parser = Parser::new(tokens);
-        let err = parser.parse().unwrap_err();
-        assert_matches!(err, ParserError::UnexpectedEof {
-             src: _,
-             location,
-         } if location.offset() == token.location.offset() -1)
+        let err = parser.parse().unwrap();
+        assert!(err.is_empty());
     }
 
     #[test]
@@ -211,13 +266,14 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::EqualEqual),
             token(TokenType::String(string.clone())),
+            token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse().unwrap();
+        let stmt = &parser.parse().unwrap()[0];
         assert_eq!(
-            expr.to_string(),
-            r#"(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#
+            stmt.to_string().trim_end(),
+            r#"Expr(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#
         );
     }
 
@@ -226,11 +282,12 @@ mod parser_tests {
         let tokens = vec![
             token(TokenType::Minus),
             token(TokenType::Number(1.0)),
+            token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse().unwrap();
-        assert_eq!(expr.to_string(), r#"(Minus (1))"#);
+        let stmt = &parser.parse().unwrap()[0];
+        assert_eq!(stmt.to_string().trim_end(), r#"Expr(Minus (1))"#);
     }
 
     #[test]
@@ -242,12 +299,16 @@ mod parser_tests {
             token(TokenType::String(string.clone())),
             token(TokenType::RightParen),
             token_with_location(TokenType::RightParen, (9, 1).into()),
+            token_with_location(TokenType::Semicolon, (10, 1).into()),
             token(TokenType::Eof),
         ];
         let mut parser = Parser::new(tokens);
-        let expr = parser.parse().unwrap();
-        assert_eq!(expr.to_string(), r#"(group (group ("foo")))"#);
-        assert_eq!(expr.location, (1, 9).into())
+        let stmt = &parser.parse().unwrap()[0];
+        assert_eq!(
+            stmt.to_string().trim_end(),
+            r#"Expr(group (group ("foo")))"#
+        );
+        assert_eq!(stmt.location, (1, 10).into())
     }
 
     #[test]

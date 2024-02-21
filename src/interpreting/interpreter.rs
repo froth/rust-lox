@@ -2,7 +2,7 @@ use crate::token::TokenType;
 use crate::types::Type;
 use crate::value::Value;
 use crate::{
-    ast::expr::{ExprType, Literal, Expr},
+    ast::expr::{Expr, ExprType, Literal},
     token::Token,
 };
 
@@ -72,21 +72,13 @@ fn handle_numbers(
     }
 }
 
-fn handle_values(
-    left: &Expr,
-    right: &Expr,
-    f: fn(Value, Value) -> bool,
-) -> Result<Value> {
+fn handle_values(left: &Expr, right: &Expr, f: fn(Value, Value) -> bool) -> Result<Value> {
     let l = left.interpret();
     let r = right.interpret();
     Ok(Value::Boolean(f(l?, r?)))
 }
 
-fn handle_plus_binary(
-    left: &Expr,
-    token: &Token,
-    right: &Expr,
-) -> Result<Value> {
+fn handle_plus_binary(left: &Expr, token: &Token, right: &Expr) -> Result<Value> {
     let l = left.interpret();
     let r = right.interpret();
     match (l?, r?) {
@@ -103,11 +95,7 @@ fn handle_plus_binary(
     }
 }
 
-fn interpret_binary(
-    left: &Expr,
-    token: &Token,
-    right: &Expr,
-) -> Result<Value> {
+fn interpret_binary(left: &Expr, token: &Token, right: &Expr) -> Result<Value> {
     match token.token_type {
         TokenType::Minus => handle_numbers(left, token, right, |l, r| (l - r).into()),
         TokenType::Slash => handle_numbers(left, token, right, |l, r| (l / r).into()),

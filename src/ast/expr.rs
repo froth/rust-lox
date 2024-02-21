@@ -48,6 +48,19 @@ impl Expr {
     }
 }
 
+impl Display for Expr {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.expr_type {
+            ExprType::Binary(left, token, right) => {
+                write!(f, "({} {} {})", token.token_type, left, right)
+            }
+            ExprType::Grouping(expr) => write!(f, "(group {})", expr),
+            ExprType::Literal(literal) => write!(f, "({})", literal),
+            ExprType::Unary(token, right) => write!(f, "({} {})", token.token_type, right),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum ExprType {
     Binary(Box<Expr>, Token, Box<Expr>),
@@ -71,19 +84,6 @@ impl ExprType {
 
     pub fn unary(token: Token, expr: Expr) -> ExprType {
         Self::Unary(token, Box::new(expr))
-    }
-}
-
-impl Display for Expr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.expr_type {
-            ExprType::Binary(left, token, right) => {
-                write!(f, "({} {} {})", token.token_type, left, right)
-            }
-            ExprType::Grouping(expr) => write!(f, "(group {})", expr),
-            ExprType::Literal(literal) => write!(f, "({})", literal),
-            ExprType::Unary(token, right) => write!(f, "({} {})", token.token_type, right),
-        }
     }
 }
 

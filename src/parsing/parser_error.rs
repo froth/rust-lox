@@ -27,6 +27,14 @@ pub enum ParserError {
         #[label("here")]
         location: SourceSpan,
     },
+
+    #[error("Expected ';' after expression")]
+    ExpectedSemicolon {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("expression")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
