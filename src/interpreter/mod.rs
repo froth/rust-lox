@@ -1,11 +1,11 @@
-mod expr;
+mod expression;
 mod literal;
 pub mod runtime_error;
-mod stmt;
+mod statement;
 
 use crate::{ast::stmt::Stmt, printer::Printer};
 
-use self::{runtime_error::RuntimeError, stmt::StmtInterpreter};
+use self::{runtime_error::RuntimeError, statement::StmtInterpreter};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Interpreter<'a> {

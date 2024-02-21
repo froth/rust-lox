@@ -20,7 +20,7 @@ impl<'a> Lox<'a> {
         // tokens.iter().for_each(|x| println!("{:?}", x));
         let mut parser = Parser::new(tokens);
         let statements = parser.parse()?;
-        // statements.iter().for_each(|stmt| print!("{}", stmt));
+        statements.iter().for_each(|stmt| print!("{} -> {:?}", stmt, stmt.location));
         let interpreter = Interpreter::new(self.printer);
         interpreter.interpret(statements)?;
         Ok(())

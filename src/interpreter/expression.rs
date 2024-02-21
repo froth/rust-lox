@@ -1,6 +1,6 @@
 use crate::{
     ast::expr::{Expr, ExprType},
-    token::{Token, TokenType},
+    ast::token::{Token, TokenType},
     types::Type,
     value::Value,
 };
@@ -148,8 +148,8 @@ mod value_interpreter_tests {
 
     use crate::{
         ast::expr::{Expr, Literal},
-        interpreter::{expr::ExprInterpreter, runtime_error::RuntimeError::*},
-        token::{Token, TokenType},
+        interpreter::{expression::ExprInterpreter, runtime_error::RuntimeError::*},
+        ast::token::{Token, TokenType},
         types::Type,
         value::Value,
     };

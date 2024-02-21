@@ -3,7 +3,7 @@ use crate::{
     printer::Printer,
 };
 
-use super::expr::ExprInterpreter;
+use super::expression::ExprInterpreter;
 use super::Result;
 
 pub struct StmtInterpreter<'a> {
@@ -25,6 +25,7 @@ impl<'a> StmtInterpreter<'a> {
                 .expr_interpreter
                 .interpret(&expr)
                 .map(|value| self.printer.print(value)),
+            StmtType::Var(_, _) => todo!()
         }
     }
 }
@@ -38,9 +39,9 @@ mod stmt_interpreter_tests {
             expr::{Expr, Literal},
             stmt::Stmt,
         },
-        interpreter::stmt::StmtInterpreter,
+        interpreter::statement::StmtInterpreter,
         printer::vec_printer::VecPrinter,
-        token::{Token, TokenType},
+        ast::token::{Token, TokenType},
     };
 
     #[test]

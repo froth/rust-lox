@@ -35,6 +35,14 @@ pub enum ParserError {
         #[label("expression")]
         location: SourceSpan,
     },
+
+    #[error("Expected identifier")]
+    ExpectedIdentifier {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("no identifier")]
+        location: SourceSpan,
+    }
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
