@@ -6,8 +6,11 @@ use miette::{NamedSource, SourceSpan};
 use crate::ast::expr::Expr;
 use crate::ast::expr::Literal::{self};
 use crate::ast::stmt::Stmt;
+use crate::ast::{
+    expr::ExprType,
+    token::{Token, TokenType},
+};
 use crate::source_span_extensions::SourceSpanExtensions;
-use crate::ast::{expr::ExprType,token::{Token, TokenType}};
 
 use super::parser_error::ParserError::{self, *};
 use super::parser_error::ParserErrors;
@@ -88,9 +91,17 @@ impl Parser {
                 expr = Some(self.expression()?)
             }
             let semicolon_location = self.expect_semicolon(var_location, src.clone())?;
-            Ok(Stmt::var(name, expr, var_location.until(semicolon_location), src))
+            Ok(Stmt::var(
+                name,
+                expr,
+                var_location.until(semicolon_location),
+                src,
+            ))
         } else {
-            Err(ExpectedIdentifier { src: peek.src.clone(), location: peek.location })
+            Err(ExpectedIdentifier {
+                src: peek.src.clone(),
+                location: peek.location,
+            })
         }
     }
 
@@ -232,7 +243,11 @@ impl Parser {
         &self.tokens[self.current - 1]
     }
 
-    fn expect_semicolon(&mut self, last_location: SourceSpan, src: Arc<NamedSource<String>> ) -> Result<SourceSpan> {
+    fn expect_semicolon(
+        &mut self,
+        last_location: SourceSpan,
+        src: Arc<NamedSource<String>>,
+    ) -> Result<SourceSpan> {
         if let Some(semicolon) = match_token!(self, TokenType::Semicolon) {
             let location = semicolon.location;
             Ok(location)
@@ -243,7 +258,6 @@ impl Parser {
             })
         }
     }
-
 }
 
 #[cfg(test)]
@@ -252,8 +266,8 @@ mod parser_tests {
     use miette::{NamedSource, SourceSpan};
 
     use crate::{
-        parsing::parser_error::ParserError,
         ast::token::{Token, TokenType},
+        parsing::parser_error::ParserError,
     };
 
     use super::Parser;

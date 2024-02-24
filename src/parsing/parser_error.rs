@@ -42,7 +42,7 @@ pub enum ParserError {
         src: Arc<NamedSource<String>>,
         #[label("no identifier")]
         location: SourceSpan,
-    }
+    },
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]

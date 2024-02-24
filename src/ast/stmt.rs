@@ -29,10 +29,16 @@ impl Stmt {
         }
     }
 
-    pub fn var(name: String, expr: Option<Expr>, location: SourceSpan, src: Arc<NamedSource<String>>) -> Self {
-        Stmt{
+    pub fn var(
+        name: String,
+        expr: Option<Expr>,
+        location: SourceSpan,
+        src: Arc<NamedSource<String>>,
+    ) -> Self {
+        Stmt {
             stmt_type: StmtType::Var(Name(name), expr),
-            src, location
+            src,
+            location,
         }
     }
 }
@@ -41,7 +47,7 @@ impl Stmt {
 pub enum StmtType {
     Expression(Expr),
     Print(Expr),
-    Var(Name, Option<Expr>)
+    Var(Name, Option<Expr>),
 }
 
 impl Display for Stmt {

@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     ast::expr::{Expr, ExprType},
     ast::token::{Token, TokenType},
@@ -5,13 +7,17 @@ use crate::{
     value::Value,
 };
 
-use super::Result;
+use super::{environment::Environment, Result};
 use super::{literal::LiteralInterpreter, runtime_error::RuntimeError::*};
-pub struct ExprInterpreter;
+pub struct ExprInterpreter{
+    environment: Rc<Environment>
+}
 
 impl ExprInterpreter {
-    pub fn new() -> Self {
-        ExprInterpreter
+    pub fn new(environment: Rc<Environment>) -> Self {
+        ExprInterpreter{
+            environment
+        }
     }
     pub fn interpret(&self, expr: &Expr) -> Result<Value> {
         match &expr.expr_type {
@@ -147,30 +153,33 @@ mod value_interpreter_tests {
     use miette::NamedSource;
 
     use crate::{
-        ast::expr::{Expr, Literal},
-        interpreter::{expression::ExprInterpreter, runtime_error::RuntimeError::*},
-        ast::token::{Token, TokenType},
+        ast::{expr::{Expr, Literal}, token::{Token, TokenType}},
+        interpreter::{environment::Environment, expression::ExprInterpreter, runtime_error::RuntimeError::*},
         types::Type,
         value::Value,
     };
 
+
     #[test]
     fn string_literal() {
         let expr = literal(Literal::String("Test".to_string()));
-        assert_matches!(ExprInterpreter::new().interpret(&expr).unwrap(), Value::String(string) if string == "Test");
+        let under_test = ExprInterpreter::new(Environment::new().into());
+        assert_matches!(under_test.interpret(&expr).unwrap(), Value::String(string) if string == "Test");
     }
     #[test]
     fn minus_one() {
         let expr = literal(1.0.into());
         let expr = Expr::unary(token(TokenType::Minus), expr);
-        assert_matches!(ExprInterpreter::new().interpret(&expr).unwrap(), Value::Number(number) if number == -1.0);
+        let under_test = ExprInterpreter::new(Environment::new().into());
+        assert_matches!(under_test.interpret(&expr).unwrap(), Value::Number(number) if number == -1.0);
     }
     #[test]
     fn bang_one() {
         let expr = literal(1.0.into());
         let expr = Expr::unary(token(TokenType::Bang), expr);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap(),
+            under_test.interpret(&expr).unwrap(),
             Value::Boolean(false)
         );
     }
@@ -178,8 +187,9 @@ mod value_interpreter_tests {
     fn bang_false() {
         let expr = literal(Literal::Boolean(false));
         let expr = Expr::unary(token(TokenType::Bang), expr);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap(),
+            under_test.interpret(&expr).unwrap(),
             Value::Boolean(true)
         );
     }
@@ -187,8 +197,9 @@ mod value_interpreter_tests {
     fn bang_nil() {
         let expr = literal(Literal::Nil);
         let expr = Expr::unary(token(TokenType::Bang), expr);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap(),
+            under_test.interpret(&expr).unwrap(),
             Value::Boolean(true)
         );
     }
@@ -197,7 +208,8 @@ mod value_interpreter_tests {
         let one = literal(1.0.into());
         let five = literal(5.0.into());
         let expr = Expr::binary(five, token(TokenType::Minus), one);
-        assert_matches!(ExprInterpreter::new().interpret(&expr).unwrap(), Value::Number(number) if float_eq!(number, 4.0, ulps_all <= 4));
+        let under_test = ExprInterpreter::new(Environment::new().into());
+        assert_matches!(under_test.interpret(&expr).unwrap(), Value::Number(number) if float_eq!(number, 4.0, ulps_all <= 4));
     }
     #[test]
     fn one_minus_string() {
@@ -205,8 +217,9 @@ mod value_interpreter_tests {
         let right = literal(Literal::String("sdfsdf".to_string()));
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap_err(),
+            under_test.interpret(&expr).unwrap_err(),
             WrongType {
                 operator: _,
                 expected: Type::Number,
@@ -221,8 +234,9 @@ mod value_interpreter_tests {
         let right = literal("sdfsdf".to_string().into());
         let operator = token(TokenType::EqualEqual);
         let expr = Expr::binary(left, operator, right);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap(),
+            under_test.interpret(&expr).unwrap(),
             Value::Boolean(false)
         );
     }
@@ -232,8 +246,9 @@ mod value_interpreter_tests {
         let right = literal(1.0.into());
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap_err(),
+            under_test.interpret(&expr).unwrap_err(),
             WrongType {
                 operator: _,
                 expected: Type::Number,
@@ -248,8 +263,9 @@ mod value_interpreter_tests {
         let right = literal(Literal::Nil);
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap_err(),
+            under_test.interpret(&expr).unwrap_err(),
             WrongTypes {
                 operator: _,
                 expected: Type::Number,
@@ -265,14 +281,16 @@ mod value_interpreter_tests {
         let right = literal("are good".to_string().into());
         let operator = token(TokenType::Plus);
         let expr = Expr::binary(left, operator, right);
-        assert_matches!(ExprInterpreter::new().interpret(&expr).unwrap(), Value::String(string) if  string == "dogs are good");
+        let under_test = ExprInterpreter::new(Environment::new().into());
+        assert_matches!(under_test.interpret(&expr).unwrap(), Value::String(string) if  string == "dogs are good");
     }
     #[test]
     fn five_plus() {
         let one = literal(1.0.into());
         let five = literal(5.0.into());
         let expr = Expr::binary(five, token(TokenType::Plus), one);
-        assert_matches!(ExprInterpreter::new().interpret(&expr).unwrap(), Value::Number(number) if float_eq!(number, 6.0, ulps_all <= 4));
+        let under_test = ExprInterpreter::new(Environment::new().into());
+        assert_matches!(under_test.interpret(&expr).unwrap(), Value::Number(number) if float_eq!(number, 6.0, ulps_all <= 4));
     }
     #[test]
     fn string_plus_one() {
@@ -280,8 +298,9 @@ mod value_interpreter_tests {
         let right = literal(1.0.into());
         let operator = token(TokenType::Plus);
         let expr = Expr::binary(left, operator, right);
+        let under_test = ExprInterpreter::new(Environment::new().into());
         assert_matches!(
-            ExprInterpreter::new().interpret(&expr).unwrap_err(),
+            under_test.interpret(&expr).unwrap_err(),
             PlusOperatorWrongTypes {
                 actual_lhs: Type::String,
                 actual_rhs: Type::Number,

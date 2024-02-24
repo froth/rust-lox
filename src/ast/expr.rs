@@ -2,7 +2,7 @@ use std::{fmt::Display, sync::Arc};
 
 use miette::{NamedSource, SourceSpan};
 
-use crate::{source_span_extensions::SourceSpanExtensions, ast::token::Token};
+use crate::{ast::token::Token, source_span_extensions::SourceSpanExtensions};
 
 #[derive(Debug)]
 pub struct Expr {

@@ -1,22 +1,25 @@
+use std::rc::Rc;
+
 use crate::{
     ast::stmt::{Stmt, StmtType},
     printer::Printer,
 };
 
-use super::{environment::Environment, expression::ExprInterpreter};
 use super::Result;
+use super::{environment::Environment, expression::ExprInterpreter};
 
-pub struct StmtInterpreter<'a> {
-    printer: &'a dyn Printer,
-    environment: Environment,
+pub struct StmtInterpreter {
+    printer: Rc<dyn Printer>,
+    environment: Rc<Environment>,
     expr_interpreter: ExprInterpreter,
 }
-impl<'a> StmtInterpreter<'a> {
-    pub fn new(printer: &'a dyn Printer, environment: Environment) -> Self {
+impl StmtInterpreter {
+    pub fn new(printer: Rc<dyn Printer>, environment: Environment) -> Self {
+        let environment = Rc::new(environment);
         Self {
             printer,
-            environment,
-            expr_interpreter: ExprInterpreter::new(),
+            environment: environment.clone(),
+            expr_interpreter: ExprInterpreter::new(environment),
         }
     }
 
@@ -27,19 +30,22 @@ impl<'a> StmtInterpreter<'a> {
                 .expr_interpreter
                 .interpret(&expr)
                 .map(|value| self.printer.print(value)),
-            StmtType::Var(_, _) => todo!()
+            StmtType::Var(_, _) => todo!(),
         }
     }
 }
 #[cfg(test)]
 mod stmt_interpreter_tests {
 
+    use std::rc::Rc;
+
     use miette::NamedSource;
 
     use crate::{
         ast::{
             expr::{Expr, Literal},
-            stmt::Stmt, token::{Token, TokenType},
+            stmt::Stmt,
+            token::{Token, TokenType},
         },
         interpreter::{environment::Environment, statement::StmtInterpreter},
         printer::vec_printer::VecPrinter,
@@ -47,12 +53,12 @@ mod stmt_interpreter_tests {
 
     #[test]
     fn print_string_literal() {
-        let printer = VecPrinter::new();
+        let printer = Rc::new(VecPrinter::new());
         let stmt = Stmt::print(
             literal(Literal::String("string".to_string())),
             (0, 1).into(),
         );
-        let interpreter = StmtInterpreter::new(&printer, Environment::new());
+        let interpreter = StmtInterpreter::new(printer.clone(), Environment::new());
         interpreter.interpret(stmt).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
     }

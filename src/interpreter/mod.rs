@@ -1,20 +1,22 @@
+mod environment;
 mod expression;
 mod literal;
 pub mod runtime_error;
 mod statement;
-mod environment;
+
+use std::rc::Rc;
 
 use crate::{ast::stmt::Stmt, printer::Printer};
 
 use self::{environment::Environment, runtime_error::RuntimeError, statement::StmtInterpreter};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
-pub struct Interpreter<'a> {
-    stmt_interpreter: StmtInterpreter<'a>,
+pub struct Interpreter {
+    stmt_interpreter: StmtInterpreter,
 }
 
-impl<'a> Interpreter<'a> {
-    pub fn new(printer: &'a dyn Printer) -> Self {
+impl Interpreter {
+    pub fn new(printer: Rc<dyn Printer>) -> Self {
         Self {
             stmt_interpreter: StmtInterpreter::new(printer, Environment::new()),
         }

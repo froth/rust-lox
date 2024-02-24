@@ -1,18 +1,25 @@
+use std::rc::Rc;
 use std::sync::Arc;
 
 use miette::NamedSource;
 
-use crate::{interpreter::Interpreter, parsing::Parser, printer::Printer, scanning::Scanner};
+use crate::{
+    interpreter::Interpreter, parsing::Parser, printer::ConsolePrinter, scanning::Scanner,
+};
 
-pub struct Lox<'a> {
-    printer: &'a dyn Printer,
+pub struct Lox {
+    interpreter: Interpreter,
 }
 
-impl<'a> Lox<'a> {
-    pub fn new(printer: &'a impl Printer) -> Self {
-        Self { printer }
+impl Default for Lox {
+    fn default() -> Self {
+        Self {
+            interpreter: Interpreter::new(Rc::new(ConsolePrinter)),
+        }
     }
+}
 
+impl Lox {
     pub fn run(&self, source: String, named_source: NamedSource<String>) -> miette::Result<()> {
         let named_source: Arc<NamedSource<String>> = named_source.into();
         let mut scanner = Scanner::new(source, named_source.clone());
@@ -20,9 +27,10 @@ impl<'a> Lox<'a> {
         // tokens.iter().for_each(|x| println!("{:?}", x));
         let mut parser = Parser::new(tokens);
         let statements = parser.parse()?;
-        statements.iter().for_each(|stmt| print!("{} -> {:?}", stmt, stmt.location));
-        let interpreter = Interpreter::new(self.printer);
-        interpreter.interpret(statements)?;
+        statements
+            .iter()
+            .for_each(|stmt| print!("{} -> {:?}", stmt, stmt.location));
+        self.interpreter.interpret(statements)?;
         Ok(())
     }
 
@@ -35,14 +43,26 @@ impl<'a> Lox<'a> {
 #[cfg(test)]
 mod lox_tests {
 
-    use crate::printer::vec_printer::VecPrinter;
+    use std::rc::Rc;
+
+    use crate::{
+        interpreter::Interpreter,
+        printer::{vec_printer::VecPrinter, Printer},
+    };
 
     use super::Lox;
+    impl Lox {
+        pub fn new(printer: Rc<dyn Printer>) -> Self {
+            Self {
+                interpreter: Interpreter::new(printer),
+            }
+        }
+    }
 
     #[test]
     fn print_string_literal() {
-        let printer = VecPrinter::new();
-        let lox = Lox::new(&printer);
+        let printer = Rc::new(VecPrinter::new());
+        let lox = Lox::new(printer.clone());
         lox.run_stdin(r#"print "string";"#.to_string()).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
     }
