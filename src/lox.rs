@@ -1,4 +1,3 @@
-
 use std::sync::Arc;
 
 use miette::NamedSource;
@@ -20,7 +19,7 @@ impl Default for Lox {
 }
 
 impl Lox {
-    pub fn run(&self, source: String, named_source: NamedSource<String>) -> miette::Result<()> {
+    pub fn run(&mut self, source: String, named_source: NamedSource<String>) -> miette::Result<()> {
         let named_source: Arc<NamedSource<String>> = named_source.into();
         let mut scanner = Scanner::new(source, named_source.clone());
         let tokens = scanner.scan_tokens()?;
@@ -34,7 +33,7 @@ impl Lox {
         Ok(())
     }
 
-    pub fn run_stdin(&self, source: String) -> miette::Result<()> {
+    pub fn run_stdin(&mut self, source: String) -> miette::Result<()> {
         let named_source: NamedSource<String> = NamedSource::new("stdin", source.clone());
         self.run(source, named_source)
     }
@@ -60,7 +59,7 @@ mod lox_tests {
     #[test]
     fn print_string_literal() {
         let printer = VecPrinter::new();
-        let lox = Lox::new(Box::new(printer.clone()));
+        let mut lox = Lox::new(Box::new(printer.clone()));
         lox.run_stdin(r#"print "string";"#.to_string()).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
     }

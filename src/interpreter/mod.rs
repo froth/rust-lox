@@ -10,19 +10,21 @@ use self::{environment::Environment, runtime_error::RuntimeError, statement::Stm
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Interpreter {
-    stmt_interpreter: StmtInterpreter,
+    printer: Box<dyn Printer>,
+    environment: Environment,
 }
 
 impl Interpreter {
     pub fn new(printer: Box<dyn Printer>) -> Self {
         Self {
-            stmt_interpreter: StmtInterpreter::new(printer, Environment::new()),
+            printer,
+            environment: Environment::new(),
         }
     }
 
-    pub fn interpret(&self, statements: Vec<Stmt>) -> Result<()> {
+    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
         statements
             .into_iter()
-            .try_for_each(|s| self.stmt_interpreter.interpret(s))
+            .try_for_each(|s| self.interpret_stmt(s))
     }
 }
