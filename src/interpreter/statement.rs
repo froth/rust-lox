@@ -1,34 +1,18 @@
-use std::rc::Rc;
+use crate::ast::stmt::{Stmt, StmtType};
 
-use crate::{
-    ast::stmt::{Stmt, StmtType},
-    printer::Printer,
-};
+use super::expression::ExprInterpreter;
+use super::{Interpreter, Result};
 
-use super::Result;
-use super::{environment::Environment, expression::ExprInterpreter};
-
-pub struct StmtInterpreter {
-    printer: Box<dyn Printer>,
-    environment: Rc<Environment>,
-    expr_interpreter: ExprInterpreter,
+pub trait StmtInterpreter {
+    fn interpret_stmt(&mut self, statement: Stmt) -> Result<()>;
 }
-impl StmtInterpreter {
-    pub fn new(printer: Box<dyn Printer>, environment: Environment) -> Self {
-        let environment = Rc::new(environment);
-        Self {
-            printer,
-            environment: environment.clone(),
-            expr_interpreter: ExprInterpreter::new(environment),
-        }
-    }
 
-    pub fn interpret(&self, statement: Stmt) -> Result<()> {
+impl StmtInterpreter for Interpreter {
+    fn interpret_stmt(&mut self, statement: Stmt) -> Result<()> {
         match statement.stmt_type {
-            StmtType::Expression(expr) => self.expr_interpreter.interpret(&expr).map(|_| ()),
+            StmtType::Expression(expr) => self.interpret_expr(&expr).map(|_| ()),
             StmtType::Print(expr) => self
-                .expr_interpreter
-                .interpret(&expr)
+                .interpret_expr(&expr)
                 .map(|value| self.printer.print(value)),
             StmtType::Var(_, _) => todo!(),
         }
@@ -36,8 +20,6 @@ impl StmtInterpreter {
 }
 #[cfg(test)]
 mod stmt_interpreter_tests {
-
-    use std::rc::Rc;
 
     use miette::NamedSource;
 
@@ -47,7 +29,7 @@ mod stmt_interpreter_tests {
             stmt::Stmt,
             token::{Token, TokenType},
         },
-        interpreter::{environment::Environment, statement::StmtInterpreter},
+        interpreter::{statement::StmtInterpreter, Interpreter},
         printer::vec_printer::VecPrinter,
     };
 
@@ -58,8 +40,8 @@ mod stmt_interpreter_tests {
             literal(Literal::String("string".to_string())),
             (0, 1).into(),
         );
-        let interpreter = StmtInterpreter::new(Box::new(printer.clone()), Environment::new());
-        interpreter.interpret(stmt).unwrap();
+        let mut interpreter = Interpreter::new(Box::new(printer.clone()));
+        interpreter.interpret_stmt(stmt).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
     }
 

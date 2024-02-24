@@ -39,13 +39,13 @@ fn run_file(file: String) -> miette::Result<()> {
     let contents = fs::read_to_string(file.clone()).into_diagnostic()?;
 
     let named_source = NamedSource::new(file, contents.clone());
-    let lox = Lox::default();
+    let mut lox = Lox::default();
     lox.run(contents, named_source)
 }
 
 fn run_prompt() -> miette::Result<()> {
     let std = io::stdin();
-    let lox = Lox::default();
+    let mut lox = Lox::default();
     loop {
         print!("> ");
         io::stdout().flush().into_diagnostic()?;
