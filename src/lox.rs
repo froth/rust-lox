@@ -1,4 +1,4 @@
-use std::rc::Rc;
+
 use std::sync::Arc;
 
 use miette::NamedSource;
@@ -14,7 +14,7 @@ pub struct Lox {
 impl Default for Lox {
     fn default() -> Self {
         Self {
-            interpreter: Interpreter::new(Rc::new(ConsolePrinter)),
+            interpreter: Interpreter::new(Box::new(ConsolePrinter)),
         }
     }
 }
@@ -27,9 +27,9 @@ impl Lox {
         // tokens.iter().for_each(|x| println!("{:?}", x));
         let mut parser = Parser::new(tokens);
         let statements = parser.parse()?;
-        statements
-            .iter()
-            .for_each(|stmt| print!("{} -> {:?}", stmt, stmt.location));
+        // statements
+        //     .iter()
+        //     .for_each(|stmt| print!("{} -> {:?}", stmt, stmt.location));
         self.interpreter.interpret(statements)?;
         Ok(())
     }
@@ -43,8 +43,6 @@ impl Lox {
 #[cfg(test)]
 mod lox_tests {
 
-    use std::rc::Rc;
-
     use crate::{
         interpreter::Interpreter,
         printer::{vec_printer::VecPrinter, Printer},
@@ -52,7 +50,7 @@ mod lox_tests {
 
     use super::Lox;
     impl Lox {
-        pub fn new(printer: Rc<dyn Printer>) -> Self {
+        pub fn new(printer: Box<dyn Printer>) -> Self {
             Self {
                 interpreter: Interpreter::new(printer),
             }
@@ -61,8 +59,8 @@ mod lox_tests {
 
     #[test]
     fn print_string_literal() {
-        let printer = Rc::new(VecPrinter::new());
-        let lox = Lox::new(printer.clone());
+        let printer = VecPrinter::new();
+        let lox = Lox::new(Box::new(printer.clone()));
         lox.run_stdin(r#"print "string";"#.to_string()).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
     }

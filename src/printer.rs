@@ -13,20 +13,21 @@ impl Printer for ConsolePrinter {
 
 #[cfg(test)]
 pub mod vec_printer {
-    use std::cell::RefCell;
+    use std::{cell::RefCell, rc::Rc};
 
     use crate::value::Value;
 
     use super::Printer;
 
+    #[derive(Clone)]
     pub struct VecPrinter {
-        lines: RefCell<Vec<Value>>,
+        lines: Rc<RefCell<Vec<Value>>>,
     }
 
     impl VecPrinter {
         pub fn new() -> Self {
             Self {
-                lines: vec![].into(),
+                lines: Rc::new(vec![].into()),
             }
         }
         pub fn get_lines(&self) -> Vec<Value> {

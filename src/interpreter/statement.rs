@@ -9,12 +9,12 @@ use super::Result;
 use super::{environment::Environment, expression::ExprInterpreter};
 
 pub struct StmtInterpreter {
-    printer: Rc<dyn Printer>,
+    printer: Box<dyn Printer>,
     environment: Rc<Environment>,
     expr_interpreter: ExprInterpreter,
 }
 impl StmtInterpreter {
-    pub fn new(printer: Rc<dyn Printer>, environment: Environment) -> Self {
+    pub fn new(printer: Box<dyn Printer>, environment: Environment) -> Self {
         let environment = Rc::new(environment);
         Self {
             printer,
@@ -53,12 +53,12 @@ mod stmt_interpreter_tests {
 
     #[test]
     fn print_string_literal() {
-        let printer = Rc::new(VecPrinter::new());
+        let printer = VecPrinter::new();
         let stmt = Stmt::print(
             literal(Literal::String("string".to_string())),
             (0, 1).into(),
         );
-        let interpreter = StmtInterpreter::new(printer.clone(), Environment::new());
+        let interpreter = StmtInterpreter::new(Box::new(printer.clone()), Environment::new());
         interpreter.interpret(stmt).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
     }

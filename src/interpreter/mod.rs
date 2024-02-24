@@ -4,8 +4,6 @@ mod literal;
 pub mod runtime_error;
 mod statement;
 
-use std::rc::Rc;
-
 use crate::{ast::stmt::Stmt, printer::Printer};
 
 use self::{environment::Environment, runtime_error::RuntimeError, statement::StmtInterpreter};
@@ -16,7 +14,7 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    pub fn new(printer: Rc<dyn Printer>) -> Self {
+    pub fn new(printer: Box<dyn Printer>) -> Self {
         Self {
             stmt_interpreter: StmtInterpreter::new(printer, Environment::new()),
         }
