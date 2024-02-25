@@ -26,7 +26,7 @@ mod stmt_interpreter_tests {
 
     use crate::{
         ast::{
-            expr::{Expr, Literal, Name},
+            expr::{Expr, Literal},
             stmt::Stmt,
             token::{Token, TokenType},
         },
@@ -43,7 +43,7 @@ mod stmt_interpreter_tests {
         );
         let mut interpreter = Interpreter::new(Box::new(printer.clone()));
         interpreter.interpret_stmt(stmt).unwrap();
-        assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
+        assert_eq!(printer.get_lines(), vec!["string".into()])
     }
 
     fn token(token_type: TokenType) -> Token {

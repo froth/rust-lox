@@ -218,7 +218,7 @@ mod value_interpreter_tests {
     #[test]
     fn one_minus_string() {
         let left = literal(1.0.into());
-        let right = literal(Literal::String("sdfsdf".to_string()));
+        let right = literal("sdfsdf".into());
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
@@ -235,7 +235,7 @@ mod value_interpreter_tests {
     #[test]
     fn nil_equals_string() {
         let left = literal(Literal::Nil);
-        let right = literal("sdfsdf".to_string().into());
+        let right = literal("sdfsdf".into());
         let operator = token(TokenType::EqualEqual);
         let expr = Expr::binary(left, operator, right);
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
@@ -246,7 +246,7 @@ mod value_interpreter_tests {
     }
     #[test]
     fn string_minus_one() {
-        let left = literal(Literal::String("sdfsdf".to_string()));
+        let left = literal("sdfsdf".into());
         let right = literal(1.0.into());
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
@@ -263,7 +263,7 @@ mod value_interpreter_tests {
     }
     #[test]
     fn string_minus_nil() {
-        let left = literal("sdfsdf".to_string().into());
+        let left = literal("sdfsdf".into());
         let right = literal(Literal::Nil);
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
@@ -281,8 +281,8 @@ mod value_interpreter_tests {
     }
     #[test]
     fn string_plus_string() {
-        let left = literal("dogs ".to_string().into());
-        let right = literal("are good".to_string().into());
+        let left = literal("dogs ".into());
+        let right = literal("are good".into());
         let operator = token(TokenType::Plus);
         let expr = Expr::binary(left, operator, right);
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
@@ -298,7 +298,7 @@ mod value_interpreter_tests {
     }
     #[test]
     fn string_plus_one() {
-        let left = literal(Literal::String("sdfsdf".to_string()));
+        let left = literal("sdfsdf".into());
         let right = literal(1.0.into());
         let operator = token(TokenType::Plus);
         let expr = Expr::binary(left, operator, right);
