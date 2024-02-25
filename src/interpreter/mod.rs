@@ -6,7 +6,7 @@ mod statement;
 
 use crate::{ast::stmt::Stmt, printer::Printer};
 
-use self::{environment::Environment, runtime_error::RuntimeError, statement::StmtInterpreter};
+use self::{environment::Environment, runtime_error::RuntimeError};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Interpreter {

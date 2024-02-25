@@ -36,7 +36,7 @@ impl Stmt {
         src: Arc<NamedSource<String>>,
     ) -> Self {
         Stmt {
-            stmt_type: StmtType::Var(Name(name), expr),
+            stmt_type: StmtType::Var(Name::new(name), expr),
             src,
             location,
         }
