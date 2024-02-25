@@ -61,7 +61,7 @@ mod lox_tests {
         let printer = VecPrinter::new();
         let mut lox = Lox::new(Box::new(printer.clone()));
         lox.run_stdin(r#"print "string";"#.to_string()).unwrap();
-        assert_eq!(printer.get_lines(), vec!["string".to_string().into()])
+        assert_eq!(printer.get_lines(), vec!["string".into()])
     }
 
     #[test]
@@ -72,6 +72,6 @@ mod lox_tests {
             var x = "string";
             print "x=" + x;
         "#.to_string()).unwrap();
-        assert_eq!(printer.get_lines(), vec!["x=string".to_string().into()])
+        assert_eq!(printer.get_lines(), vec!["x=string".into()])
     }
 }

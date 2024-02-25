@@ -152,3 +152,9 @@ impl From<String> for Literal {
         Literal::String(value)
     }
 }
+
+impl From<&str> for Literal {
+    fn from(value: &str) -> Self {
+        Literal::String(value.to_string())
+    }
+}

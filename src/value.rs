@@ -36,3 +36,9 @@ impl From<String> for Value {
         Value::String(value)
     }
 }
+
+impl From<&str> for Value {
+    fn from(value: &str) -> Self {
+        Value::String(value.to_string())
+    }
+}
