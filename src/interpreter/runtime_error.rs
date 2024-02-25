@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
-use crate::types::Type;
+use crate::{ast::expr::Name, types::Type};
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
 pub enum RuntimeError {
@@ -48,5 +48,14 @@ pub enum RuntimeError {
         lhs: SourceSpan,
         #[label("{actual_rhs}")]
         rhs: SourceSpan,
+    },
+
+    #[error("Undefined variable '{name}'")]
+    UndefinedVariable {
+        name: Name,
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
     },
 }

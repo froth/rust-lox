@@ -81,8 +81,14 @@ pub enum ExprType {
     Variable(Name),
 }
 
-#[derive(Debug)]
-pub struct Name(pub String);
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Name(String);
+
+impl Name {
+    pub fn new(s: String) -> Self {
+        Name(s)
+    }
+}
 
 impl Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

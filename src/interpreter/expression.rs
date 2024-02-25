@@ -1,29 +1,35 @@
 use crate::{
-    ast::expr::{Expr, ExprType},
-    ast::token::{Token, TokenType},
+    ast::{
+        expr::{Expr, ExprType, Name},
+        token::{Token, TokenType},
+    },
     types::Type,
     value::Value,
 };
 
 use super::{literal::LiteralInterpreter, runtime_error::RuntimeError::*};
 use super::{Interpreter, Result};
-pub trait ExprInterpreter {
-    fn interpret_expr(&mut self, expr: &Expr) -> Result<Value>;
-}
 
-impl ExprInterpreter for Interpreter {
-    fn interpret_expr(&mut self, expr: &Expr) -> Result<Value> {
+impl Interpreter {
+    pub fn interpret_expr(&mut self, expr: &Expr) -> Result<Value> {
         match &expr.expr_type {
             ExprType::Binary(left, token, right) => self.interpret_binary(left, token, right),
             ExprType::Grouping(expr) => self.interpret_expr(expr),
             ExprType::Literal(l) => l.interpret(),
             ExprType::Unary(token, expr) => self.interpret_unary(token, expr),
-            ExprType::Variable(name) => todo!(),
+            ExprType::Variable(name) => self.read_variable(name, expr),
         }
     }
-}
 
-impl Interpreter {
+    fn read_variable(&self, name: &Name, expr: &Expr) -> Result<Value> {
+        let val = self.environment.get(name);
+        val.ok_or(UndefinedVariable {
+            name: name.clone(),
+            src: expr.src.clone(),
+            location: expr.location,
+        })
+    }
+
     fn is_truthy(value: Value) -> bool {
         match value {
             Value::Boolean(bool) => bool,
@@ -151,9 +157,11 @@ mod value_interpreter_tests {
         ast::{
             expr::{Expr, Literal},
             token::{Token, TokenType},
-        }, interpreter::{
-            expression::ExprInterpreter, runtime_error::RuntimeError::*, Interpreter,
-        }, printer::vec_printer::VecPrinter, types::Type, value::Value
+        },
+        interpreter::{runtime_error::RuntimeError::*, Interpreter},
+        printer::vec_printer::VecPrinter,
+        types::Type,
+        value::Value,
     };
 
     #[test]
@@ -174,21 +182,30 @@ mod value_interpreter_tests {
         let expr = literal(1.0.into());
         let expr = Expr::unary(token(TokenType::Bang), expr);
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
-        assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Boolean(false));
+        assert_matches!(
+            under_test.interpret_expr(&expr).unwrap(),
+            Value::Boolean(false)
+        );
     }
     #[test]
     fn bang_false() {
         let expr = literal(Literal::Boolean(false));
         let expr = Expr::unary(token(TokenType::Bang), expr);
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
-        assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Boolean(true));
+        assert_matches!(
+            under_test.interpret_expr(&expr).unwrap(),
+            Value::Boolean(true)
+        );
     }
     #[test]
     fn bang_nil() {
         let expr = literal(Literal::Nil);
         let expr = Expr::unary(token(TokenType::Bang), expr);
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
-        assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Boolean(true));
+        assert_matches!(
+            under_test.interpret_expr(&expr).unwrap(),
+            Value::Boolean(true)
+        );
     }
     #[test]
     fn five_minus_one() {
@@ -222,7 +239,10 @@ mod value_interpreter_tests {
         let operator = token(TokenType::EqualEqual);
         let expr = Expr::binary(left, operator, right);
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
-        assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Boolean(false));
+        assert_matches!(
+            under_test.interpret_expr(&expr).unwrap(),
+            Value::Boolean(false)
+        );
     }
     #[test]
     fn string_minus_one() {
