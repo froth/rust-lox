@@ -1,4 +1,10 @@
-use crate::{ast::{expr::{Expr, Name}, stmt::{Stmt, StmtType}}, value::Value};
+use crate::{
+    ast::{
+        expr::{Expr, Name},
+        stmt::{Stmt, StmtType},
+    },
+    value::Value,
+};
 
 use super::{Interpreter, Result};
 
@@ -14,7 +20,7 @@ impl Interpreter {
     }
 
     fn define_var(&mut self, key: Name, initializer: Option<Expr>) -> Result<()> {
-        let initializer = initializer.map_or(Ok(Value::Nil),|expr| self.interpret_expr(&expr))?;
+        let initializer = initializer.map_or(Ok(Value::Nil), |expr| self.interpret_expr(&expr))?;
         self.environment.define(key, initializer);
         Ok(())
     }

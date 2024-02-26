@@ -1,13 +1,14 @@
-use std::{
-    fs,
-    io::{self, Write},
-};
+use std::fs;
 
 use clap::Parser;
 use lox::Lox;
 
 use args::Args;
 use miette::{IntoDiagnostic, NamedSource};
+use rustyline::{
+    error::ReadlineError, highlight::MatchingBracketHighlighter,
+    validate::MatchingBracketValidator, Completer, Editor, Helper, Highlighter, Hinter, Validator,
+};
 
 mod args;
 mod ast;
@@ -43,22 +44,38 @@ fn run_file(file: String) -> miette::Result<()> {
     lox.run(contents, named_source)
 }
 
+#[derive(Helper, Completer, Hinter, Validator, Highlighter, Default)]
+struct MyHelper {
+    #[rustyline(Validator)]
+    validator: MatchingBracketValidator,
+    #[rustyline(Highlighter)]
+    highlighter: MatchingBracketHighlighter,
+}
+
 fn run_prompt() -> miette::Result<()> {
-    let std = io::stdin();
+    const HISTORY_FILE: &str = ".history";
+    let mut rl = Editor::new().into_diagnostic()?;
+    rl.set_helper(Some(MyHelper::default()));
+    rl.load_history(HISTORY_FILE)
+        .unwrap_or_else(|_err| println!("No history file found: {}", HISTORY_FILE));
     let mut lox = Lox::default();
     loop {
-        print!("> ");
-        io::stdout().flush().into_diagnostic()?;
-        let mut buf = String::new();
-        match std.read_line(&mut buf).into_diagnostic()? {
-            0 => return Ok(()),
-            _ => {
-                let source = buf.trim_end().to_string();
+        let readline = rl.readline(">> ");
+        match readline {
+            Ok(source) => {
+                rl.add_history_entry(source.as_str()).into_diagnostic()?;
                 lox.run_stdin(source)
                     .unwrap_or_else(|err| eprintln!("{:?}", err));
             }
+            Err(ReadlineError::Interrupted) => break,
+            Err(ReadlineError::Eof) => break,
+            err => {
+                err.into_diagnostic()?;
+            }
         }
     }
+    rl.save_history(HISTORY_FILE).into_diagnostic()?;
+    Ok(())
 }
 
 #[cfg(test)]
