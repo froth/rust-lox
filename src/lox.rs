@@ -26,6 +26,7 @@ impl Lox {
         // tokens.iter().for_each(|x| println!("{:?}", x));
         let mut parser = Parser::new(tokens);
         let statements = parser.parse()?;
+        // if repl statements.recover parser.reset; parser.expression()?;
         // statements
         //     .iter()
         //     .for_each(|stmt| print!("{} -> {:?}", stmt, stmt.location));
@@ -68,10 +69,14 @@ mod lox_tests {
     fn print_variable() {
         let printer = VecPrinter::new();
         let mut lox = Lox::new(Box::new(printer.clone()));
-        lox.run_stdin(r#"
+        lox.run_stdin(
+            r#"
             var x = "string";
             print "x=" + x;
-        "#.to_string()).unwrap();
+        "#
+            .to_string(),
+        )
+        .unwrap();
         assert_eq!(printer.get_lines(), vec!["x=string".into()])
     }
 }
