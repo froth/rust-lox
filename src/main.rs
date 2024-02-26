@@ -25,7 +25,7 @@ fn main() {
     let args = Args::parse();
     let result = match args.file {
         Some(file) => run_file(file),
-        None => run_prompt(),
+        None => run_prompt().into_diagnostic(),
     };
     match result {
         Ok(_) => (),
@@ -52,9 +52,9 @@ struct MyHelper {
     highlighter: MatchingBracketHighlighter,
 }
 
-fn run_prompt() -> miette::Result<()> {
+fn run_prompt() -> rustyline::Result<()> {
     const HISTORY_FILE: &str = ".history";
-    let mut rl = Editor::new().into_diagnostic()?;
+    let mut rl = Editor::new()?;
     rl.set_helper(Some(MyHelper::default()));
     rl.load_history(HISTORY_FILE)
         .unwrap_or_else(|_err| println!("No history file found: {}", HISTORY_FILE));
@@ -63,18 +63,18 @@ fn run_prompt() -> miette::Result<()> {
         let readline = rl.readline(">> ");
         match readline {
             Ok(source) => {
-                rl.add_history_entry(source.as_str()).into_diagnostic()?;
+                rl.add_history_entry(source.as_str())?;
                 lox.run_stdin(source)
                     .unwrap_or_else(|err| eprintln!("{:?}", err));
             }
             Err(ReadlineError::Interrupted) => break,
             Err(ReadlineError::Eof) => break,
             err => {
-                err.into_diagnostic()?;
+                err?;
             }
         }
     }
-    rl.save_history(HISTORY_FILE).into_diagnostic()?;
+    rl.save_history(HISTORY_FILE)?;
     Ok(())
 }
 
