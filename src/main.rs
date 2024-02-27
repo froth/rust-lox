@@ -15,7 +15,6 @@ mod ast;
 mod interpreter;
 mod lox;
 mod parsing;
-mod printer;
 mod scanning;
 mod source_span_extensions;
 mod types;
@@ -52,8 +51,9 @@ struct MyHelper {
     highlighter: MatchingBracketHighlighter,
 }
 
+const HISTORY_FILE: &str = ".history";
+
 fn run_prompt() -> rustyline::Result<()> {
-    const HISTORY_FILE: &str = ".history";
     let mut rl = Editor::new()?;
     rl.set_helper(Some(MyHelper::default()));
     rl.load_history(HISTORY_FILE)
@@ -64,11 +64,13 @@ fn run_prompt() -> rustyline::Result<()> {
         match readline {
             Ok(source) => {
                 rl.add_history_entry(source.as_str())?;
-                lox.run_stdin(source)
-                    .unwrap_or_else(|err| eprintln!("{:?}", err));
+                match lox.run_repl(source) {
+                    Ok(Some(value)) => println!("expr => {}", value),
+                    Ok(None) => (),
+                    Err(err) => eprintln!("{:?}", err),
+                }
             }
-            Err(ReadlineError::Interrupted) => break,
-            Err(ReadlineError::Eof) => break,
+            Err(ReadlineError::Interrupted | ReadlineError::Eof) => break,
             err => {
                 err?;
             }

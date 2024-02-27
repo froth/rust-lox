@@ -1,51 +1,55 @@
-use std::sync::Arc;
-
 use miette::NamedSource;
 
 use crate::{
-    interpreter::Interpreter, parsing::Parser, printer::ConsolePrinter, scanning::Scanner,
+    interpreter::Interpreter,
+    parsing::{parser_error::ParserError::ExpectedSemicolon, Parser},
+    scanning::Scanner,
+    value::Value,
 };
 
+#[derive(Default)]
 pub struct Lox {
     interpreter: Interpreter,
 }
 
-impl Default for Lox {
-    fn default() -> Self {
-        Self {
-            interpreter: Interpreter::new(Box::new(ConsolePrinter)),
-        }
-    }
-}
-
 impl Lox {
     pub fn run(&mut self, source: String, named_source: NamedSource<String>) -> miette::Result<()> {
-        let named_source: Arc<NamedSource<String>> = named_source.into();
-        let mut scanner = Scanner::new(source, named_source.clone());
-        let tokens = scanner.scan_tokens()?;
-        // tokens.iter().for_each(|x| println!("{:?}", x));
-        let mut parser = Parser::new(tokens);
-        let statements = parser.parse()?;
-        // if repl statements.recover parser.reset; parser.expression()?;
-        // statements
-        //     .iter()
-        //     .for_each(|stmt| print!("{} -> {:?}", stmt, stmt.location));
+        let tokens = Scanner::scan(source, named_source)?;
+        let statements = Parser::parse(tokens)?;
         self.interpreter.interpret(statements)?;
         Ok(())
     }
 
-    pub fn run_stdin(&mut self, source: String) -> miette::Result<()> {
-        let named_source: NamedSource<String> = NamedSource::new("stdin", source.clone());
-        self.run(source, named_source)
+    pub fn run_repl(&mut self, source: String) -> miette::Result<Option<Value>> {
+        let named_source = NamedSource::new("repl", source.clone());
+        let tokens = Scanner::scan(source, named_source)?;
+        match Parser::parse(tokens) {
+            Ok(statements) => {
+                self.interpreter.interpret(statements)?;
+                Ok(None)
+            }
+            Err(parser_errors) => match &parser_errors.parser_errors[..] {
+                [ExpectedSemicolon {
+                    expr: Some(expr),
+                    src: _,
+                    location: _,
+                }] => {
+                    let result = self.interpreter.interpret_expr(expr)?;
+                    Ok(Some(result))
+                }
+                _ => Err(parser_errors)?,
+            },
+        }
     }
 }
 
 #[cfg(test)]
 mod lox_tests {
+    //TODO: unpub printer once these tests are migrated to file based
 
     use crate::{
+        interpreter::printer::{vec_printer::VecPrinter, Printer},
         interpreter::Interpreter,
-        printer::{vec_printer::VecPrinter, Printer},
     };
 
     use super::Lox;
@@ -61,7 +65,7 @@ mod lox_tests {
     fn print_string_literal() {
         let printer = VecPrinter::new();
         let mut lox = Lox::new(Box::new(printer.clone()));
-        lox.run_stdin(r#"print "string";"#.to_string()).unwrap();
+        lox.run_repl(r#"print "string";"#.to_string()).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".into()])
     }
 
@@ -69,7 +73,7 @@ mod lox_tests {
     fn print_variable() {
         let printer = VecPrinter::new();
         let mut lox = Lox::new(Box::new(printer.clone()));
-        lox.run_stdin(
+        lox.run_repl(
             r#"
             var x = "string";
             print "x=" + x;

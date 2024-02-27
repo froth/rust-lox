@@ -30,11 +30,15 @@ macro_rules! match_token {
 }
 pub type Result<T> = core::result::Result<T, ParserError>;
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub fn parse(tokens: Vec<Token>) -> core::result::Result<Vec<Stmt>, ParserErrors> {
+        Self::new(tokens).parse_internal()
+    }
+
+    fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, current: 0 }
     }
 
-    pub fn parse(&mut self) -> core::result::Result<Vec<Stmt>, ParserErrors> {
+    fn parse_internal(&mut self) -> core::result::Result<Vec<Stmt>, ParserErrors> {
         let mut statements = vec![];
         let mut errors = vec![];
         while !self.is_at_end() {
@@ -115,7 +119,21 @@ impl Parser {
 
     fn expression_statement(&mut self) -> Result<Stmt> {
         let expr = self.expression()?;
-        let semicolon_location = self.expect_semicolon(expr.location, expr.src.clone())?;
+        let semicolon_location = match self.expect_semicolon(expr.location, expr.src.clone()) {
+            Ok(location) => location,
+            Err(ExpectedSemicolon {
+                expr: _,
+                src,
+                location,
+            }) => {
+                return Err(ExpectedSemicolon {
+                    expr: Some(expr),
+                    src,
+                    location,
+                })
+            }
+            err => err?,
+        };
         let location = expr.location.until(semicolon_location);
         Ok(Stmt::expr(expr, location))
     }
@@ -253,6 +271,7 @@ impl Parser {
             Ok(location)
         } else {
             Err(ExpectedSemicolon {
+                expr: None,
                 src,
                 location: last_location,
             })
@@ -280,9 +299,8 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let stmt = &parser.parse().unwrap()[0];
-        assert_eq!(stmt.to_string().trim_end(), r#"Expr("foo")"#);
+        let stmts = Parser::parse(tokens).unwrap();
+        assert_eq!(stmts[0].to_string().trim_end(), r#"Expr("foo")"#);
     }
 
     #[test]
@@ -294,18 +312,16 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let stmt = &parser.parse().unwrap()[0];
-        assert_eq!(stmt.to_string().trim_end(), r#"Print("foo")"#);
+        let stmts = Parser::parse(tokens).unwrap();
+        assert_eq!(stmts[0].to_string().trim_end(), r#"Print("foo")"#);
     }
 
     #[test]
     fn parse_eof() {
         let token = token(TokenType::Eof);
         let tokens = vec![token.clone()];
-        let mut parser = Parser::new(tokens);
-        let err = parser.parse().unwrap();
-        assert!(err.is_empty());
+        let stmts = Parser::parse(tokens).unwrap();
+        assert!(stmts.is_empty());
     }
 
     #[test]
@@ -320,10 +336,9 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let stmt = &parser.parse().unwrap()[0];
+        let stmts = Parser::parse(tokens).unwrap();
         assert_eq!(
-            stmt.to_string().trim_end(),
+            stmts[0].to_string().trim_end(),
             r#"Expr(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#
         );
     }
@@ -336,9 +351,8 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let stmt = &parser.parse().unwrap()[0];
-        assert_eq!(stmt.to_string().trim_end(), r#"Expr(Minus (1))"#);
+        let stmts = Parser::parse(tokens).unwrap();
+        assert_eq!(stmts[0].to_string().trim_end(), r#"Expr(Minus (1))"#);
     }
 
     #[test]
@@ -353,13 +367,12 @@ mod parser_tests {
             token_with_location(TokenType::Semicolon, (10, 1).into()),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let stmt = &parser.parse().unwrap()[0];
+        let stmts = Parser::parse(tokens).unwrap();
         assert_eq!(
-            stmt.to_string().trim_end(),
+            stmts[0].to_string().trim_end(),
             r#"Expr(group (group ("foo")))"#
         );
-        assert_eq!(stmt.location, (1, 10).into())
+        assert_eq!(stmts[0].location, (1, 10).into())
     }
 
     #[test]
@@ -372,10 +385,9 @@ mod parser_tests {
             token(TokenType::RightParen),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let err = &parser.parse().unwrap_err().parser_errors[0];
+        let errs = Parser::parse(tokens).unwrap_err().parser_errors;
         assert_matches!(
-            err,
+            errs[0],
             ParserError::ExpectedRightParan {
                 src: _,
                 location: _,
@@ -392,9 +404,8 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let stmt = &parser.parse().unwrap()[0];
-        assert_eq!(stmt.to_string().trim_end(), "Var name")
+        let stmts = Parser::parse(tokens).unwrap();
+        assert_eq!(stmts[0].to_string().trim_end(), "Var name")
     }
 
     #[test]
@@ -408,9 +419,8 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let stmt = &parser.parse().unwrap()[0];
-        assert_eq!(stmt.to_string().trim_end(), "Var name = (nil)")
+        let stmts = Parser::parse(tokens).unwrap();
+        assert_eq!(stmts[0].to_string().trim_end(), "Var name = (nil)")
     }
 
     #[test]
@@ -425,8 +435,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let mut parser = Parser::new(tokens);
-        let errors = parser.parse().unwrap_err();
+        let errors = Parser::parse(tokens).unwrap_err();
         assert_eq!(errors.parser_errors.len(), 2);
         assert_matches!(
             &errors.parser_errors[0],

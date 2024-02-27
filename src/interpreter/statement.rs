@@ -9,7 +9,7 @@ use crate::{
 use super::{Interpreter, Result};
 
 impl Interpreter {
-    pub fn interpret_stmt(&mut self, statement: Stmt) -> Result<()> {
+    pub(super) fn interpret_stmt(&mut self, statement: Stmt) -> Result<()> {
         match statement.stmt_type {
             StmtType::Expression(expr) => self.interpret_expr(&expr).map(|_| ()),
             StmtType::Print(expr) => self
@@ -36,8 +36,7 @@ mod stmt_interpreter_tests {
             stmt::Stmt,
             token::{Token, TokenType},
         },
-        interpreter::Interpreter,
-        printer::vec_printer::VecPrinter,
+        interpreter::{printer::vec_printer::VecPrinter, Interpreter},
     };
 
     #[test]
