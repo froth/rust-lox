@@ -45,12 +45,11 @@ impl Lox {
 
 #[cfg(test)]
 mod lox_tests {
-    //TODO: unpub printer once these tests are migrated to file based
-
     use crate::{
         interpreter::printer::{vec_printer::VecPrinter, Printer},
         interpreter::Interpreter,
     };
+    use datadriven::walk;
 
     use super::Lox;
     impl Lox {
@@ -60,27 +59,16 @@ mod lox_tests {
             }
         }
     }
-
     #[test]
-    fn print_string_literal() {
-        let printer = VecPrinter::new();
-        let mut lox = Lox::new(Box::new(printer.clone()));
-        lox.run_repl(r#"print "string";"#.to_string()).unwrap();
-        assert_eq!(printer.get_lines(), vec!["string".into()])
-    }
-
-    #[test]
-    fn print_variable() {
-        let printer = VecPrinter::new();
-        let mut lox = Lox::new(Box::new(printer.clone()));
-        lox.run_repl(
-            r#"
-            var x = "string";
-            print "x=" + x;
-        "#
-            .to_string(),
-        )
-        .unwrap();
-        assert_eq!(printer.get_lines(), vec!["x=string".into()])
+    fn integration_tests() {
+        walk("tests/", |f| {
+            f.run(|test_case| -> String {
+                let input = test_case.input.to_string();
+                let printer = VecPrinter::new();
+                let mut lox = Lox::new(Box::new(printer.clone()));
+                lox.run_repl(input).unwrap();
+                printer.get_output()
+            })
+        });
     }
 }

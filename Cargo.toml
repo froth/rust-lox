@@ -18,3 +18,4 @@ rustyline = {version= "13.0.0", features = ["with-file-history", "derive"]}
 anyhow = "1.0.80"
 assert_matches = "1.5"
 float_eq = "1.0.1"
+datadriven = "0.8.0"
