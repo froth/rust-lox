@@ -1,0 +1,6 @@
+interpret
+var a = 5;
+var b = 3;
+print a + b;
+----
+8

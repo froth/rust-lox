@@ -19,7 +19,7 @@ impl Default for Box<dyn Printer> {
 
 #[cfg(test)]
 pub mod vec_printer {
-    use std::{cell::RefCell, rc::Rc};
+    use std::{cell::RefCell, ops::Add, rc::Rc};
 
     use crate::value::Value;
 
@@ -38,6 +38,10 @@ pub mod vec_printer {
         }
         pub fn get_lines(&self) -> Vec<Value> {
             self.lines.borrow().clone()
+        }
+        
+        pub fn get_output(&self) -> String {
+            self.lines.borrow().iter().map(|x| x.to_string().add("\n")).collect()
         }
     }
 
