@@ -158,8 +158,9 @@ mod value_interpreter_tests {
             expr::{Expr, Literal},
             token::{Token, TokenType},
         },
-        interpreter::{runtime_error::RuntimeError::*, Interpreter},
-        printer::vec_printer::VecPrinter,
+        interpreter::{
+            printer::vec_printer::VecPrinter, runtime_error::RuntimeError::*, Interpreter,
+        },
         types::Type,
         value::Value,
     };

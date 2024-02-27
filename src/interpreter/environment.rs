@@ -2,16 +2,11 @@ use std::collections::HashMap;
 
 use crate::{ast::expr::Name, value::Value};
 
+#[derive(Default)]
 pub struct Environment {
     values: HashMap<Name, Value>,
 }
 impl Environment {
-    pub fn new() -> Self {
-        Self {
-            values: HashMap::new(),
-        }
-    }
-
     pub fn define(&mut self, key: Name, value: Value) {
         self.values.insert(key, value);
     }
@@ -33,7 +28,7 @@ mod environment_tests {
 
     #[test]
     fn define_get() {
-        let mut env = Environment::new();
+        let mut env = Environment::default();
         let name = Name::new("x".to_string());
         env.define(name.clone(), Value::Boolean(true));
         let returned = env.get(&name);
@@ -42,7 +37,7 @@ mod environment_tests {
 
     #[test]
     fn define_assign_get() {
-        let mut env = Environment::new();
+        let mut env = Environment::default();
         let name = Name::new("x".to_string());
         env.define(name.clone(), Value::Boolean(true));
         let assigned = env.assign(name.clone(), Value::Boolean(false));
@@ -53,7 +48,7 @@ mod environment_tests {
 
     #[test]
     fn assign_unasigned() {
-        let mut env = Environment::new();
+        let mut env = Environment::default();
         let name = Name::new("x".to_string());
         let assigned = env.assign(name.clone(), Value::Boolean(false));
         assert!(!assigned);

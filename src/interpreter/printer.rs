@@ -11,6 +11,12 @@ impl Printer for ConsolePrinter {
     }
 }
 
+impl Default for Box<dyn Printer> {
+    fn default() -> Self {
+        Box::new(ConsolePrinter)
+    }
+}
+
 #[cfg(test)]
 pub mod vec_printer {
     use std::{cell::RefCell, rc::Rc};

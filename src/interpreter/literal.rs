@@ -1,6 +1,6 @@
 use super::Result;
 use crate::{ast::expr::Literal, value::Value};
-pub trait LiteralInterpreter {
+pub(super) trait LiteralInterpreter {
     fn interpret(&self) -> Result<Value>;
 }
 impl LiteralInterpreter for Literal {

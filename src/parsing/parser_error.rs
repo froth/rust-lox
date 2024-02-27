@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
+use crate::ast::expr::Expr;
+
 #[derive(thiserror::Error, Debug, Diagnostic)]
 pub enum ParserError {
     #[error("Expected )")]
@@ -30,6 +32,7 @@ pub enum ParserError {
 
     #[error("Expected ';' after expression")]
     ExpectedSemicolon {
+        expr: Option<Expr>, //for interpreting expr in repl without
         #[source_code]
         src: Arc<NamedSource<String>>,
         #[label("expression")]

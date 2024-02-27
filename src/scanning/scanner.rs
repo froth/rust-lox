@@ -44,7 +44,15 @@ pub struct Scanner {
 pub type Result<T> = core::result::Result<T, ScannerError>;
 
 impl Scanner {
-    pub fn new(source: String, named_source: Arc<NamedSource<String>>) -> Self {
+    pub fn scan(
+        source: String,
+        named_source: NamedSource<String>,
+    ) -> core::result::Result<Vec<Token>, ScannerErrors> {
+        Self::new(source, named_source).scan_tokens()
+    }
+
+    fn new(source: String, named_source: NamedSource<String>) -> Self {
+        let named_source: Arc<NamedSource<String>> = named_source.into();
         let error_combiner = ErrorCombiner::new(named_source.clone());
         Self {
             source,
@@ -56,7 +64,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) -> core::result::Result<Vec<Token>, ScannerErrors> {
+    fn scan_tokens(&mut self) -> core::result::Result<Vec<Token>, ScannerErrors> {
         let mut scanner_errors = vec![];
         while let Some(char) = self.advance() {
             self.start = self.current - 1; //has already been advanced
