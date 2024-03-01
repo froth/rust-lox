@@ -1,0 +1,9 @@
+interpret
+var a = true;
+var b = false;
+a = 2;
+print b = 6;
+print a + b;
+----
+6
+8
