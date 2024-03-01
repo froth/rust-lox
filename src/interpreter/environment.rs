@@ -15,8 +15,8 @@ impl Environment {
         self.values.get(key).cloned()
     }
 
-    pub fn assign(&mut self, key: Name, value: Value) -> bool {
-        self.values.get_mut(&key).map(|old| *old = value).is_some()
+    pub fn assign(&mut self, key: &Name, value: &Value) -> bool {
+        self.values.get_mut(key).map(|old| *old = value.clone()).is_some()
     }
 }
 
@@ -40,7 +40,7 @@ mod environment_tests {
         let mut env = Environment::default();
         let name = Name::new("x".to_string());
         env.define(name.clone(), Value::Boolean(true));
-        let assigned = env.assign(name.clone(), Value::Boolean(false));
+        let assigned = env.assign(&name, &Value::Boolean(false));
         assert!(assigned);
         let returned = env.get(&name);
         assert_eq!(returned, Some(Value::Boolean(false)))
@@ -50,7 +50,7 @@ mod environment_tests {
     fn assign_unasigned() {
         let mut env = Environment::default();
         let name = Name::new("x".to_string());
-        let assigned = env.assign(name.clone(), Value::Boolean(false));
+        let assigned = env.assign(&name, &Value::Boolean(false));
         assert!(!assigned);
         let returned = env.get(&name);
         assert_eq!(returned, None)

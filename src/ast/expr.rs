@@ -102,6 +102,12 @@ pub enum ExprType {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name(String);
 
+impl From<&str> for Name {
+    fn from(value: &str) -> Self {
+        Name(value.to_string())
+    }
+}
+
 impl Name {
     pub fn new(s: String) -> Self {
         Name(s)

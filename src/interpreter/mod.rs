@@ -29,4 +29,11 @@ impl Interpreter {
             environment: Environment::default(),
         }
     }
+    #[cfg(test)]
+    pub fn with_env(printer: Box<dyn Printer>, environment: Environment) -> Self {
+        Self {
+            printer,
+            environment,
+        }
+    }
 }

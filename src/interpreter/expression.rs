@@ -31,8 +31,17 @@ impl Interpreter {
         })
     }
     
-    fn assign_variable(&self, name: &NameExpr, expr: &Expr) -> Result<Value> {
-        todo!()
+    fn assign_variable(&mut self, name: &NameExpr, expr: &Expr) -> Result<Value> {
+        let value = self.interpret_expr(expr)?;
+        if self.environment.assign(&name.name, &value) {
+            Ok(value)
+        } else {
+            Err(UndefinedVariable {
+                name: name.name.clone(),
+                src: expr.src.clone(),
+                location: name.location,
+            })
+        }
     }
 
     fn is_truthy(value: Value) -> bool {
@@ -160,11 +169,11 @@ mod value_interpreter_tests {
 
     use crate::{
         ast::{
-            expr::{Expr, Literal},
+            expr::{Expr, Literal, Name, NameExpr},
             token::{Token, TokenType},
         },
         interpreter::{
-            printer::vec_printer::VecPrinter, runtime_error::RuntimeError::*, Interpreter,
+            environment::Environment, printer::vec_printer::VecPrinter, runtime_error::RuntimeError::*, Interpreter
         },
         types::Type,
         value::Value,
@@ -318,6 +327,31 @@ mod value_interpreter_tests {
             }
         );
     }
+
+    #[test]
+    fn assign_unassigned_var() {
+        let right = literal(1.0.into());
+        let expr = Expr::assign(name_expr("a".into()), right);
+        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        assert_matches!(
+            under_test.interpret_expr(&expr).unwrap_err(),
+            UndefinedVariable {
+                ..
+            }
+        );
+    }
+
+    #[test]
+    fn assign_assigned_var() {
+        let name: Name = "a".into();
+        let right = literal(false.into());
+        let expr = Expr::assign(name_expr(name.clone()), right);
+        let mut env = Environment::default();
+        env.define(name, Value::Nil);
+        let mut under_test = Interpreter::with_env(Box::new(VecPrinter::new()), env);
+        assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Boolean(false));
+    }
+
     fn token(token_type: TokenType) -> Token {
         Token::new(
             token_type,
@@ -329,5 +363,8 @@ mod value_interpreter_tests {
 
     fn literal(literal: Literal) -> Expr {
         Expr::literal(literal, &token(TokenType::Eof))
+    }
+    fn name_expr(name: Name) -> NameExpr {
+        NameExpr { name , location: (0,1).into(), src:  NamedSource::new("name", String::new()).into()}
     }
 }
