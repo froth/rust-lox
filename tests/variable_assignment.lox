@@ -2,6 +2,7 @@ interpret
 var a = true;
 var b = false;
 a = 2;
+// assignment is expr
 print b = 6;
 print a + b;
 ----
