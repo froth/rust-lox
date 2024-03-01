@@ -237,7 +237,7 @@ mod scanner_tests {
     #[test]
     fn parse_string() {
         let input = "\"test\"".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input));
         let result = scanner.scan_tokens().unwrap();
         let head = &result[0].token_type;
         assert_matches!(head, String(x) if x == "test");
@@ -245,7 +245,7 @@ mod scanner_tests {
     #[test]
     fn parse_float() {
         let input = "1.1".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input));
         let result = scanner.scan_tokens().unwrap();
         assert_eq!(result.len(), 2);
         let head = &result[0].token_type;
@@ -254,7 +254,7 @@ mod scanner_tests {
     #[test]
     fn parse_identifier() {
         let input = "variable_name".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input.clone()).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input.clone()));
         let result = scanner.scan_tokens().unwrap();
         let head = &result[0];
         let token_type = &head.token_type;
@@ -264,7 +264,7 @@ mod scanner_tests {
     #[test]
     fn parse_for() {
         let input = "for".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input));
         let result = scanner.scan_tokens().unwrap();
         let head = &result[0];
         let token_type = &head.token_type;
@@ -274,7 +274,7 @@ mod scanner_tests {
     #[test]
     fn raise_error_on_unterminated_string() {
         let input = "1+1; \"12345".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input));
         let acc = scanner.scan_tokens().unwrap_err();
         let result = acc.scanner_errors.first().unwrap();
         assert_matches!(result, ScannerError::NonTerminatedString {
@@ -286,7 +286,7 @@ mod scanner_tests {
     #[test]
     fn raise_error_on_unexpected_char() {
         let input = "^".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input));
         let acc = scanner.scan_tokens().unwrap_err();
         let result = acc.scanner_errors.first().unwrap();
         assert_matches!(result, ScannerError::UnexpectedCharacter {
@@ -298,7 +298,7 @@ mod scanner_tests {
     #[test]
     fn combine_unexpected_chars() {
         let input = "^^^^".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input));
         let acc = scanner.scan_tokens().unwrap_err();
         let result = acc.scanner_errors.first().unwrap();
         assert_matches!(result, ScannerError::UnexpectedCharacters {
@@ -311,7 +311,7 @@ mod scanner_tests {
     #[test]
     fn combine_unexpected_chars_only_if_offsets_overlap() {
         let input = "^^ @@".to_string();
-        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input).into());
+        let mut scanner = Scanner::new(input.clone(), NamedSource::new("", input));
         let acc = scanner.scan_tokens().unwrap_err();
         let result1 = acc.scanner_errors.first().unwrap();
         let result2 = acc.scanner_errors.get(1).unwrap();
