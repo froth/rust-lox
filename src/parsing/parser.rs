@@ -3,7 +3,7 @@ use std::vec;
 
 use miette::{NamedSource, SourceSpan};
 
-use crate::ast::expr::Expr;
+use crate::ast::expr::{Expr, NameExpr};
 use crate::ast::expr::Literal::{self};
 use crate::ast::stmt::Stmt;
 use crate::ast::{
@@ -17,6 +17,7 @@ use super::parser_error::ParserErrors;
 
 pub struct Parser {
     tokens: Vec<Token>,
+    errors: Vec<ParserError>,
     current: usize,
 }
 
@@ -35,26 +36,26 @@ impl Parser {
     }
 
     fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, current: 0 }
+        Self { tokens, errors: vec![], current: 0 }
     }
 
     fn parse_internal(&mut self) -> core::result::Result<Vec<Stmt>, ParserErrors> {
         let mut statements = vec![];
-        let mut errors = vec![];
         while !self.is_at_end() {
             match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(err) => {
                     self.synchronize();
-                    errors.push(err)
+                    self.errors.push(err)
                 }
             }
         }
-        if errors.is_empty() {
+        if self.errors.is_empty() {
             Ok(statements)
         } else {
+            let errors = std::mem::take(&mut self.errors);
             Err(ParserErrors {
-                parser_errors: errors,
+                parser_errors: errors
             })
         }
     }
@@ -147,7 +148,22 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr> {
+        let expr = self.equality()?;
+        if match_token!(self, TokenType::Equal).is_some() {
+            let value = self.assignment()?;
+            if let ExprType::Variable(name) = &expr.expr_type {
+                let name_expr = NameExpr{name: name.clone(), location: expr.location, src: expr.src};
+                return Ok(Expr::assign(name_expr, value))
+            }
+            dbg!(value);
+            self.errors.push(InvalidAssignmentTarget { src: expr.src.clone(), location: expr.location });                      
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr> {
@@ -406,6 +422,39 @@ mod parser_tests {
         ];
         let stmts = Parser::parse(tokens).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), "Var name")
+    }
+
+    #[test]
+    fn parse_variable_assignment() {
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Equal),
+            token(TokenType::True),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let stmts = Parser::parse(tokens).unwrap();
+        assert_eq!(stmts[0].to_string().trim_end(), "Expr(name=(true))")
+    }
+
+    #[test]
+    fn parse_invalid_variable_assignment() {
+        let tokens = vec![
+            token(TokenType::True),
+            token(TokenType::Equal),
+            token(TokenType::True),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let errs = Parser::parse(tokens).unwrap_err().parser_errors;
+        assert_matches!(
+            errs[0],
+            ParserError::InvalidAssignmentTarget {
+                src: _,
+                location: _,
+            }
+        )
     }
 
     #[test]

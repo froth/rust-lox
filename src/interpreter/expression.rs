@@ -1,6 +1,6 @@
 use crate::{
     ast::{
-        expr::{Expr, ExprType, Name},
+        expr::{Expr, ExprType, Name, NameExpr},
         token::{Token, TokenType},
     },
     types::Type,
@@ -18,6 +18,7 @@ impl Interpreter {
             ExprType::Literal(l) => l.interpret(),
             ExprType::Unary(token, expr) => self.interpret_unary(token, expr),
             ExprType::Variable(name) => self.read_variable(name, expr),
+            ExprType::Assign(name, expr) => self.assign_variable(name, expr),
         }
     }
 
@@ -28,6 +29,10 @@ impl Interpreter {
             src: expr.src.clone(),
             location: expr.location,
         })
+    }
+    
+    fn assign_variable(&self, name: &NameExpr, expr: &Expr) -> Result<Value> {
+        todo!()
     }
 
     fn is_truthy(value: Value) -> bool {

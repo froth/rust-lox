@@ -5,6 +5,12 @@ use miette::{NamedSource, SourceSpan};
 use crate::{ast::token::Token, source_span_extensions::SourceSpanExtensions};
 
 #[derive(Debug)]
+pub struct NameExpr {
+    pub name: Name,
+    pub location: SourceSpan,
+    pub src: Arc<NamedSource<String>>,
+}
+#[derive(Debug)]
 pub struct Expr {
     pub expr_type: ExprType,
     pub location: SourceSpan,
@@ -56,6 +62,16 @@ impl Expr {
             src,
         }
     }
+
+    pub fn assign(name: NameExpr, expr: Expr) -> Self {
+        let src = expr.src.clone();
+        let location = name.location.until(expr.location);
+        Self {
+            expr_type: ExprType::assign(name, expr),
+            location,
+            src,
+        }
+    }
 }
 
 impl Display for Expr {
@@ -66,14 +82,16 @@ impl Display for Expr {
             }
             ExprType::Grouping(expr) => write!(f, "(group {})", expr),
             ExprType::Literal(literal) => write!(f, "({})", literal),
-            ExprType::Unary(token, right) => write!(f, "({} {})", token.token_type, right),
+            ExprType::Unary(token, expr) => write!(f, "({} {})", token.token_type, expr),
             ExprType::Variable(name) => write!(f, "(variable {})", name.0),
+            ExprType::Assign(name, right) => write!(f, "({}={})", name.name, right),
         }
     }
 }
 
 #[derive(Debug)]
 pub enum ExprType {
+    Assign(NameExpr, Box<Expr>),
     Binary(Box<Expr>, Token, Box<Expr>),
     Grouping(Box<Expr>),
     Literal(Literal),
@@ -115,6 +133,10 @@ impl ExprType {
 
     pub fn variable(name: String) -> ExprType {
         Self::Variable(Name(name))
+    }
+
+    pub fn assign(name: NameExpr, expr: Expr) -> ExprType {
+        Self::Assign(name, Box::new(expr))
     }
 }
 

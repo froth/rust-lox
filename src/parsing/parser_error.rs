@@ -46,6 +46,14 @@ pub enum ParserError {
         #[label("no identifier")]
         location: SourceSpan,
     },
+    
+    #[error("Invalid assignment target")]
+    InvalidAssignmentTarget {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("not a valid target")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
