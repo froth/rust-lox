@@ -7,13 +7,13 @@ mod statement;
 
 use crate::ast::stmt::Stmt;
 
-use self::{environment::Environment, printer::Printer, runtime_error::RuntimeError};
+use self::{environment::GlobalEnvironment, printer::Printer, runtime_error::RuntimeError};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
 #[derive(Default)]
 pub struct Interpreter {
     printer: Box<dyn Printer>,
-    environment: Environment,
+    environment: GlobalEnvironment,
 }
 
 impl Interpreter {
@@ -26,11 +26,11 @@ impl Interpreter {
     pub fn new(printer: Box<dyn Printer>) -> Self {
         Self {
             printer,
-            environment: Environment::default(),
+            environment: GlobalEnvironment::default(),
         }
     }
     #[cfg(test)]
-    pub fn with_env(printer: Box<dyn Printer>, environment: Environment) -> Self {
+    pub fn with_env(printer: Box<dyn Printer>, environment: GlobalEnvironment) -> Self {
         Self {
             printer,
             environment,
