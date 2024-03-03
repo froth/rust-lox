@@ -46,7 +46,7 @@ pub enum ParserError {
         #[label("no identifier")]
         location: SourceSpan,
     },
-    
+
     #[error("Invalid assignment target")]
     InvalidAssignmentTarget {
         #[source_code]

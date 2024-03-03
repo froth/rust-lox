@@ -30,7 +30,7 @@ impl Interpreter {
             location: expr.location,
         })
     }
-    
+
     fn assign_variable(&mut self, name: &NameExpr, expr: &Expr) -> Result<Value> {
         let value = self.interpret_expr(expr)?;
         if self.environment.assign(&name.name, &value) {
@@ -173,7 +173,8 @@ mod value_interpreter_tests {
             token::{Token, TokenType},
         },
         interpreter::{
-            environment::Environment, printer::vec_printer::VecPrinter, runtime_error::RuntimeError::*, Interpreter
+            environment::Environment, printer::vec_printer::VecPrinter,
+            runtime_error::RuntimeError::*, Interpreter,
         },
         types::Type,
         value::Value,
@@ -335,9 +336,7 @@ mod value_interpreter_tests {
         let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap_err(),
-            UndefinedVariable {
-                ..
-            }
+            UndefinedVariable { .. }
         );
     }
 
@@ -349,7 +348,10 @@ mod value_interpreter_tests {
         let mut env = Environment::default();
         env.define(name, Value::Nil);
         let mut under_test = Interpreter::with_env(Box::new(VecPrinter::new()), env);
-        assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Boolean(false));
+        assert_matches!(
+            under_test.interpret_expr(&expr).unwrap(),
+            Value::Boolean(false)
+        );
     }
 
     fn token(token_type: TokenType) -> Token {
@@ -365,6 +367,10 @@ mod value_interpreter_tests {
         Expr::literal(literal, &token(TokenType::Eof))
     }
     fn name_expr(name: Name) -> NameExpr {
-        NameExpr { name , location: (0,1).into(), src:  NamedSource::new("name", String::new()).into()}
+        NameExpr {
+            name,
+            location: (0, 1).into(),
+            src: NamedSource::new("name", String::new()).into(),
+        }
     }
 }
