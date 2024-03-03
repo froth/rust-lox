@@ -24,7 +24,7 @@ fn main() {
     let args = Args::parse();
     let result = match args.file {
         Some(file) => run_file(file),
-        None => run_prompt().into_diagnostic(),
+        None => run_prompt(args).into_diagnostic(),
     };
     match result {
         Ok(_) => (),
@@ -51,13 +51,17 @@ struct MyHelper {
     highlighter: MatchingBracketHighlighter,
 }
 
-const HISTORY_FILE: &str = ".history";
 
-fn run_prompt() -> rustyline::Result<()> {
+fn run_prompt(args: Args) -> rustyline::Result<()> {
+    let history_file = args.history_file;
     let mut rl = Editor::new()?;
     rl.set_helper(Some(MyHelper::default()));
-    rl.load_history(HISTORY_FILE)
-        .unwrap_or_else(|_err| println!("No history file found: {}", HISTORY_FILE));
+    if let Err(err) = rl.load_history(&history_file).into_diagnostic() {
+        eprintln!("No previous history: {:?}", &history_file);
+        if args.verbose {
+            eprintln!("Error: {:?}", err)
+        }
+    }
     let mut lox = Lox::default();
     loop {
         let readline = rl.readline(">> ");
@@ -67,7 +71,7 @@ fn run_prompt() -> rustyline::Result<()> {
                 match lox.run_repl(source) {
                     Ok(Some(value)) => println!("expr => {}", value),
                     Ok(None) => (),
-                    Err(err) => eprintln!("{:?}", err),
+                    Err(err) => eprintln!("{}", err),
                 }
             }
             Err(ReadlineError::Interrupted | ReadlineError::Eof) => break,
@@ -76,7 +80,10 @@ fn run_prompt() -> rustyline::Result<()> {
             }
         }
     }
-    rl.save_history(HISTORY_FILE)?;
+    
+    if let Err(err) = rl.save_history(&history_file).into_diagnostic(){
+        eprintln!("Unable to save history: {:?}", err);
+    }
     Ok(())
 }
 
