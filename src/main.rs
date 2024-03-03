@@ -69,7 +69,7 @@ fn run_prompt(mut lox: Lox, args: Args) -> rustyline::Result<()> {
                 match lox.run_repl(source) {
                     Ok(Some(value)) => println!("expr => {}", value),
                     Ok(None) => (),
-                    Err(err) => eprintln!("{}", err),
+                    Err(err) => println!("{:?}", err),
                 }
             }
             Err(ReadlineError::Interrupted | ReadlineError::Eof) => break,

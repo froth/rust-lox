@@ -6,7 +6,7 @@ use crate::{
     value::Value,
 };
 
-use super::{environment::Environment, Interpreter, Result};
+use super::{Interpreter, Result};
 
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: Stmt) -> Result<()> {

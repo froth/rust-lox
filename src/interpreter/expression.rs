@@ -7,9 +7,7 @@ use crate::{
     value::Value,
 };
 
-use super::{
-    environment::Environment, literal::LiteralInterpreter, runtime_error::RuntimeError::*,
-};
+use super::{literal::LiteralInterpreter, runtime_error::RuntimeError::*};
 use super::{Interpreter, Result};
 
 impl Interpreter {
@@ -175,10 +173,8 @@ mod value_interpreter_tests {
             token::{Token, TokenType},
         },
         interpreter::{
-            environment::{Environment, GlobalEnvironment},
-            printer::vec_printer::VecPrinter,
-            runtime_error::RuntimeError::*,
-            Interpreter,
+            environment::Environment, printer::vec_printer::VecPrinter,
+            runtime_error::RuntimeError::*, Interpreter,
         },
         types::Type,
         value::Value,
@@ -349,7 +345,7 @@ mod value_interpreter_tests {
         let name: Name = "a".into();
         let right = literal(false.into());
         let expr = Expr::assign(name_expr(name.clone()), right);
-        let mut env = GlobalEnvironment::default();
+        let mut env = Environment::default();
         env.define(name, Value::Nil);
         let mut under_test = Interpreter::with_env(Box::new(VecPrinter::new()), env);
         assert_matches!(

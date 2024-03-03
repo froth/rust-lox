@@ -2,57 +2,25 @@ use std::collections::HashMap;
 
 use crate::{ast::expr::Name, value::Value};
 
-pub trait Environment {
-    fn define(&mut self, key: Name, value: Value);
-    fn get(&self, key: &Name) -> Option<Value>;
-    fn assign(&mut self, key: &Name, value: &Value) -> bool;
-}
 #[derive(Default)]
-pub struct GlobalEnvironment {
+pub struct Environment {
+    pub parent: Option<Box<Environment>>,
     values: HashMap<Name, Value>,
 }
 
-pub struct LocalEnvironment<'a> {
-    parent: &'a mut dyn Environment,
-    values: HashMap<Name, Value>,
-}
-
-impl<'a> LocalEnvironment<'a> {
-    pub fn new(parent: &'a mut dyn Environment) -> Self {
-        Self {
-            parent,
-            values: HashMap::default(),
-        }
-    }
-}
-
-impl Environment for GlobalEnvironment {
-    fn define(&mut self, key: Name, value: Value) {
+impl Environment {
+    pub fn define(&mut self, key: Name, value: Value) {
         self.values.insert(key, value);
     }
 
-    fn get(&self, key: &Name) -> Option<Value> {
-        self.values.get(key).cloned()
-    }
-
-    fn assign(&mut self, key: &Name, value: &Value) -> bool {
+    pub fn get(&self, key: &Name) -> Option<Value> {
         self.values
-            .get_mut(key)
-            .map(|old| *old = value.clone())
-            .is_some()
-    }
-}
-
-impl Environment for LocalEnvironment<'_> {
-    fn define(&mut self, key: Name, value: Value) {
-        self.values.insert(key, value);
+            .get(key)
+            .cloned()
+            .or(self.parent.as_ref().and_then(|p| p.get(key)))
     }
 
-    fn get(&self, key: &Name) -> Option<Value> {
-        self.values.get(key).cloned().or(self.parent.get(key))
-    }
-
-    fn assign(&mut self, key: &Name, value: &Value) -> bool {
+    pub fn assign(&mut self, key: &Name, value: &Value) -> bool {
         let local_assigned = self
             .values
             .get_mut(key)
@@ -61,25 +29,30 @@ impl Environment for LocalEnvironment<'_> {
         if local_assigned {
             true
         } else {
-            let environment = &mut self.parent;
-            environment.assign(key, value)
+            self.parent
+                .as_mut()
+                .map(|p| p.assign(key, value))
+                .unwrap_or(false)
         }
     }
 }
 
 #[cfg(test)]
 mod environment_tests {
-    use crate::{
-        ast::expr::Name,
-        interpreter::environment::{Environment, LocalEnvironment},
-        value::Value,
-    };
+    use std::collections::HashMap;
 
-    use super::GlobalEnvironment;
+    use crate::{ast::expr::Name, interpreter::environment::Environment, value::Value};
+
+    pub fn local(parent: Environment) -> Environment {
+        Environment {
+            parent: Some(Box::new(parent)),
+            values: HashMap::default(),
+        }
+    }
 
     #[test]
     fn define_get() {
-        let mut env = GlobalEnvironment::default();
+        let mut env = Environment::default();
         let name = Name::new("x".to_string());
         env.define(name.clone(), Value::Boolean(true));
         let returned = env.get(&name);
@@ -88,7 +61,7 @@ mod environment_tests {
 
     #[test]
     fn define_assign_get() {
-        let mut env = GlobalEnvironment::default();
+        let mut env = Environment::default();
         let name = Name::new("x".to_string());
         env.define(name.clone(), Value::Boolean(true));
         let assigned = env.assign(&name, &Value::Boolean(false));
@@ -99,7 +72,7 @@ mod environment_tests {
 
     #[test]
     fn assign_unasigned() {
-        let mut env = GlobalEnvironment::default();
+        let mut env = Environment::default();
         let name = Name::new("x".to_string());
         let assigned = env.assign(&name, &Value::Boolean(false));
         assert!(!assigned);
@@ -109,34 +82,36 @@ mod environment_tests {
 
     #[test]
     fn define_get_from_parent() {
-        let mut global = GlobalEnvironment::default();
+        let mut global = Environment::default();
         let name = Name::new("x".to_string());
         global.define(name.clone(), Value::Boolean(true));
-        let local = LocalEnvironment::new(&mut global);
+        let local = local(global);
         let returned = local.get(&name);
         assert_eq!(returned, Some(Value::Boolean(true)))
     }
 
     #[test]
     fn define_assign_to_parent() {
-        let mut global = GlobalEnvironment::default();
+        let mut global = Environment::default();
         let name = Name::new("x".to_string());
         global.define(name.clone(), Value::Nil);
-        let mut local = LocalEnvironment::new(&mut global);
+        let mut local = local(global);
         let assigned = local.assign(&name, &Value::Boolean(false));
         assert!(assigned);
+        global = *local.parent.unwrap();
         let returned = global.get(&name);
         assert_eq!(returned, Some(Value::Boolean(false)))
     }
 
     #[test]
     fn shadowing() {
-        let mut global = GlobalEnvironment::default();
+        let mut global = Environment::default();
         let name = Name::new("x".to_string());
         global.define(name.clone(), Value::Nil);
-        let mut local = LocalEnvironment::new(&mut global);
+        let mut local = local(global);
         local.define(name.clone(), Value::Boolean(false));
         let loc_return = local.get(&name);
+        global = *local.parent.unwrap();
         let glob_return = global.get(&name);
         assert_eq!(loc_return, Some(Value::Boolean(false)));
         assert_eq!(glob_return, Some(Value::Nil))
