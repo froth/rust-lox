@@ -16,7 +16,10 @@ impl Environment {
     }
 
     pub fn assign(&mut self, key: &Name, value: &Value) -> bool {
-        self.values.get_mut(key).map(|old| *old = value.clone()).is_some()
+        self.values
+            .get_mut(key)
+            .map(|old| *old = value.clone())
+            .is_some()
     }
 }
 

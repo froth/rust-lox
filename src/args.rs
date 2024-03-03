@@ -1,7 +1,6 @@
-use std::path::PathBuf;
 use clap::Parser;
 use directories::UserDirs;
-
+use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 #[command(version, about)]
@@ -13,9 +12,11 @@ pub struct Args {
     pub history_file: PathBuf,
 
     #[clap(short, long, default_value_t)]
-    pub verbose: bool
+    pub verbose: bool,
 }
 
 fn get_default_history_file() -> PathBuf {
-    UserDirs::new().map(|dirs| dirs.home_dir().join(".lox_history")).unwrap()
+    UserDirs::new()
+        .map(|dirs| dirs.home_dir().join(".lox_history"))
+        .unwrap()
 }

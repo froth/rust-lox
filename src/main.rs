@@ -51,7 +51,6 @@ struct MyHelper {
     highlighter: MatchingBracketHighlighter,
 }
 
-
 fn run_prompt(args: Args) -> rustyline::Result<()> {
     let history_file = args.history_file;
     let mut rl = Editor::new()?;
@@ -80,8 +79,8 @@ fn run_prompt(args: Args) -> rustyline::Result<()> {
             }
         }
     }
-    
-    if let Err(err) = rl.save_history(&history_file).into_diagnostic(){
+
+    if let Err(err) = rl.save_history(&history_file).into_diagnostic() {
         eprintln!("Unable to save history: {:?}", err);
     }
     Ok(())

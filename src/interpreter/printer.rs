@@ -39,9 +39,13 @@ pub mod vec_printer {
         pub fn get_lines(&self) -> Vec<Value> {
             self.lines.borrow().clone()
         }
-        
+
         pub fn get_output(&self) -> String {
-            self.lines.borrow().iter().map(|x| x.to_string().add("\n")).collect()
+            self.lines
+                .borrow()
+                .iter()
+                .map(|x| x.to_string().add("\n"))
+                .collect()
         }
     }
 

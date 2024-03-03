@@ -3,8 +3,8 @@ use std::vec;
 
 use miette::{NamedSource, SourceSpan};
 
-use crate::ast::expr::{Expr, NameExpr};
 use crate::ast::expr::Literal::{self};
+use crate::ast::expr::{Expr, NameExpr};
 use crate::ast::stmt::Stmt;
 use crate::ast::{
     expr::ExprType,
@@ -36,7 +36,11 @@ impl Parser {
     }
 
     fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, errors: vec![], current: 0 }
+        Self {
+            tokens,
+            errors: vec![],
+            current: 0,
+        }
     }
 
     fn parse_internal(&mut self) -> core::result::Result<Vec<Stmt>, ParserErrors> {
@@ -55,7 +59,7 @@ impl Parser {
         } else {
             let errors = std::mem::take(&mut self.errors);
             Err(ParserErrors {
-                parser_errors: errors
+                parser_errors: errors,
             })
         }
     }
@@ -156,11 +160,18 @@ impl Parser {
         if match_token!(self, TokenType::Equal).is_some() {
             let value = self.assignment()?;
             if let ExprType::Variable(name) = &expr.expr_type {
-                let name_expr = NameExpr{name: name.clone(), location: expr.location, src: expr.src};
-                return Ok(Expr::assign(name_expr, value))
+                let name_expr = NameExpr {
+                    name: name.clone(),
+                    location: expr.location,
+                    src: expr.src,
+                };
+                return Ok(Expr::assign(name_expr, value));
             }
             dbg!(value);
-            self.errors.push(InvalidAssignmentTarget { src: expr.src.clone(), location: expr.location });                      
+            self.errors.push(InvalidAssignmentTarget {
+                src: expr.src.clone(),
+                location: expr.location,
+            });
         }
 
         Ok(expr)
