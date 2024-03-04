@@ -48,6 +48,7 @@ pub enum StmtType {
     Expression(Expr),
     Print(Expr),
     Var(Name, Option<Expr>),
+    Block(Vec<Stmt>),
 }
 
 impl Display for Stmt {
@@ -59,6 +60,11 @@ impl Display for Stmt {
             StmtType::Print(expr) => writeln!(f, "Print{}", expr),
             StmtType::Var(name, Some(expr)) => writeln!(f, "Var {} = {}", name, expr),
             StmtType::Var(name, None) => writeln!(f, "Var {}", name),
+            StmtType::Block(stmts) => {
+                writeln!(f, "{{")?;
+                stmts.iter().try_for_each(|s| write!(f, "  {}", s))?;
+                writeln!(f, "}}")
+            }
         }
     }
 }
