@@ -542,10 +542,10 @@ mod parser_tests {
             token(TokenType::RightBrace),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(
             stmts[0].to_string().trim_end(),
-            "{\n  Expr(nil)\n  Expr(nil)\n}"
+            "{\nExpr(nil)\nExpr(nil)\n}"
         )
     }
 
@@ -559,7 +559,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let errs = Parser::parse(tokens).unwrap_err().parser_errors;
+        let errs = Parser::parse(tokens, false).unwrap_err().parser_errors;
         assert_matches!(
             errs[0],
             ParserError::ExpectedRightBrace {

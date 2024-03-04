@@ -62,7 +62,7 @@ impl Display for Stmt {
             StmtType::Var(name, None) => writeln!(f, "Var {}", name),
             StmtType::Block(stmts) => {
                 writeln!(f, "{{")?;
-                stmts.iter().try_for_each(|s| write!(f, "  {}", s))?;
+                stmts.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
             }
         }
