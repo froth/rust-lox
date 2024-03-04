@@ -16,7 +16,7 @@ impl Interpreter {
                 .interpret_expr(&expr)
                 .map(|value| self.printer.print(value)),
             Var(key, initializer) => self.define_var(key, initializer),
-            Block(stmts) => todo!(),
+            Block(stmts) => self.execute_block(stmts),
         }
     }
 
@@ -24,6 +24,13 @@ impl Interpreter {
         let initializer = initializer.map_or(Ok(Value::Nil), |expr| self.interpret_expr(&expr))?;
         self.environment.define(key, initializer);
         Ok(())
+    }
+
+    fn execute_block(&mut self, stmts: Vec<Stmt>) -> Result<()> {
+        self.push_environment();
+        let result = stmts.into_iter().try_for_each(|s| self.interpret_stmt(s));
+        self.pop_environment();
+        result
     }
 }
 #[cfg(test)]
@@ -34,10 +41,10 @@ mod stmt_interpreter_tests {
     use crate::{
         ast::{
             expr::{Expr, Literal},
-            stmt::Stmt,
+            stmt::{Stmt, StmtType},
             token::{Token, TokenType},
         },
-        interpreter::{printer::vec_printer::VecPrinter, Interpreter},
+        interpreter::{printer::vec_printer::VecPrinter, runtime_error::RuntimeError, Interpreter},
     };
 
     #[test]
@@ -52,6 +59,38 @@ mod stmt_interpreter_tests {
         assert_eq!(printer.get_lines(), vec!["string".into()])
     }
 
+    #[test]
+    fn restore_env() {
+        let printer = VecPrinter::new();
+        let stmt = block(vec![var("a")]);
+        let mut interpreter = Interpreter::new(Box::new(printer.clone()));
+        interpreter.interpret_stmt(stmt).unwrap();
+        let stmt = Stmt::expr(
+            Expr::variable("a".to_string(), token(TokenType::Eof)),
+            (0, 1).into(),
+        );
+        let err = interpreter.interpret_stmt(stmt).unwrap_err();
+        assert_matches!(err, RuntimeError::UndefinedVariable { .. })
+    }
+
+    #[test]
+    fn restore_env_on_error() {
+        let printer = VecPrinter::new();
+        let read_undefined_var = Stmt::expr(
+            Expr::variable("b".to_string(), token(TokenType::Eof)),
+            (0, 1).into(),
+        );
+        let stmt = block(vec![var("a"), read_undefined_var]);
+        let mut interpreter = Interpreter::new(Box::new(printer.clone()));
+        let _ = interpreter.interpret_stmt(stmt).unwrap_err();
+        let stmt = Stmt::expr(
+            Expr::variable("a".to_string(), token(TokenType::Eof)),
+            (0, 1).into(),
+        );
+        let err = interpreter.interpret_stmt(stmt).unwrap_err();
+        assert_matches!(err, RuntimeError::UndefinedVariable { .. })
+    }
+
     fn token(token_type: TokenType) -> Token {
         Token::new(
             token_type,
@@ -61,7 +100,23 @@ mod stmt_interpreter_tests {
         )
     }
 
+    fn block(stmts: Vec<Stmt>) -> Stmt {
+        Stmt {
+            stmt_type: StmtType::Block(stmts),
+            location: (0, 1).into(),
+            src: NamedSource::new("name", String::new()).into(),
+        }
+    }
+
     fn literal(literal: Literal) -> Expr {
         Expr::literal(literal, &token(TokenType::Eof))
+    }
+
+    fn var(name: &str) -> Stmt {
+        Stmt {
+            stmt_type: StmtType::Var(name.into(), None),
+            location: (0, 1).into(),
+            src: NamedSource::new("name", String::new()).into(),
+        }
     }
 }
