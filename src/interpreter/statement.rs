@@ -1,7 +1,7 @@
 use crate::{
     ast::{
         expr::{Expr, Name},
-        stmt::{Stmt, StmtType},
+        stmt::{Stmt, StmtType::*},
     },
     value::Value,
 };
@@ -11,11 +11,12 @@ use super::{Interpreter, Result};
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: Stmt) -> Result<()> {
         match statement.stmt_type {
-            StmtType::Expression(expr) => self.interpret_expr(&expr).map(|_| ()),
-            StmtType::Print(expr) => self
+            Expression(expr) => self.interpret_expr(&expr).map(|_| ()),
+            Print(expr) => self
                 .interpret_expr(&expr)
                 .map(|value| self.printer.print(value)),
-            StmtType::Var(key, initializer) => self.define_var(key, initializer),
+            Var(key, initializer) => self.define_var(key, initializer),
+            Block(stmts) => todo!(),
         }
     }
 

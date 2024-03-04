@@ -5,7 +5,7 @@ use miette::{NamedSource, SourceSpan};
 
 use crate::ast::expr::Literal::{self};
 use crate::ast::expr::{Expr, NameExpr};
-use crate::ast::stmt::Stmt;
+use crate::ast::stmt::{Stmt, StmtType};
 use crate::ast::{
     expr::ExprType,
     token::{Token, TokenType},
@@ -19,6 +19,12 @@ pub struct Parser {
     tokens: Vec<Token>,
     errors: Vec<ParserError>,
     current: usize,
+}
+
+struct InternalBlock {
+    stmts: Vec<Stmt>,
+    location: SourceSpan,
+    src: Arc<NamedSource<String>>,
 }
 
 macro_rules! match_token {
@@ -126,7 +132,41 @@ impl Parser {
         use TokenType::*;
         match self.peek().token_type {
             Print => self.print_statement(),
+            LeftBrace => self.block_statement(),
             _ => self.expression_statement(),
+        }
+    }
+
+    fn block_statement(&mut self) -> Result<Stmt> {
+        let block = self.block()?;
+        Ok(Stmt {
+            stmt_type: StmtType::Block(block.stmts),
+            location: block.location,
+            src: block.src,
+        })
+    }
+
+    fn block(&mut self) -> Result<InternalBlock> {
+        let left_brace_location = self.advance().location;
+        let mut stmts = vec![];
+        while !matches!(self.peek().token_type, TokenType::RightBrace) && !self.is_at_end() {
+            stmts.push(self.declaration()?);
+        }
+
+        let peek = self.peek();
+
+        if let TokenType::RightBrace = peek.token_type {
+            let right_brace = self.advance();
+            Ok(InternalBlock {
+                stmts,
+                location: left_brace_location.until(right_brace.location),
+                src: right_brace.src.clone(),
+            })
+        } else {
+            Err(ExpectedRightBrace {
+                src: peek.src.clone(),
+                location: peek.location,
+            })
         }
     }
 
@@ -489,6 +529,44 @@ mod parser_tests {
         ];
         let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), "Var name = (nil)")
+    }
+
+    #[test]
+    fn parse_block() {
+        let tokens = vec![
+            token(TokenType::LeftBrace),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::RightBrace),
+            token(TokenType::Eof),
+        ];
+        let stmts = Parser::parse(tokens).unwrap();
+        assert_eq!(
+            stmts[0].to_string().trim_end(),
+            "{\n  Expr(nil)\n  Expr(nil)\n}"
+        )
+    }
+
+    #[test]
+    fn parse_non_terminated_block() {
+        let tokens = vec![
+            token(TokenType::LeftBrace),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let errs = Parser::parse(tokens).unwrap_err().parser_errors;
+        assert_matches!(
+            errs[0],
+            ParserError::ExpectedRightBrace {
+                src: _,
+                location: _,
+            }
+        )
     }
 
     #[test]
