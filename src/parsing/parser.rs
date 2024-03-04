@@ -31,8 +31,16 @@ macro_rules! match_token {
 }
 pub type Result<T> = core::result::Result<T, ParserError>;
 impl Parser {
-    pub fn parse(tokens: Vec<Token>) -> core::result::Result<Vec<Stmt>, ParserErrors> {
-        Self::new(tokens).parse_internal()
+    pub fn parse(
+        tokens: Vec<Token>,
+        verbose: bool,
+    ) -> core::result::Result<Vec<Stmt>, ParserErrors> {
+        let stmts = Self::new(tokens).parse_internal()?;
+        if verbose {
+            eprintln!("Statements:");
+            stmts.iter().for_each(|s| eprint!("{}", s));
+        }
+        Ok(stmts)
     }
 
     fn new(tokens: Vec<Token>) -> Self {
@@ -326,7 +334,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), r#"Expr("foo")"#);
     }
 
@@ -339,7 +347,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), r#"Print("foo")"#);
     }
 
@@ -347,7 +355,7 @@ mod parser_tests {
     fn parse_eof() {
         let token = token(TokenType::Eof);
         let tokens = vec![token.clone()];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert!(stmts.is_empty());
     }
 
@@ -363,7 +371,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(
             stmts[0].to_string().trim_end(),
             r#"Expr(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#
@@ -378,7 +386,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), r#"Expr(Minus (1))"#);
     }
 
@@ -394,7 +402,7 @@ mod parser_tests {
             token_with_location(TokenType::Semicolon, (10, 1).into()),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(
             stmts[0].to_string().trim_end(),
             r#"Expr(group (group ("foo")))"#
@@ -412,7 +420,7 @@ mod parser_tests {
             token(TokenType::RightParen),
             token(TokenType::Eof),
         ];
-        let errs = Parser::parse(tokens).unwrap_err().parser_errors;
+        let errs = Parser::parse(tokens, false).unwrap_err().parser_errors;
         assert_matches!(
             errs[0],
             ParserError::ExpectedRightParan {
@@ -431,7 +439,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), "Var name")
     }
 
@@ -445,7 +453,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), "Expr(name=(true))")
     }
 
@@ -458,7 +466,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let errs = Parser::parse(tokens).unwrap_err().parser_errors;
+        let errs = Parser::parse(tokens, false).unwrap_err().parser_errors;
         assert_matches!(
             errs[0],
             ParserError::InvalidAssignmentTarget {
@@ -479,7 +487,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = Parser::parse(tokens).unwrap();
+        let stmts = Parser::parse(tokens, false).unwrap();
         assert_eq!(stmts[0].to_string().trim_end(), "Var name = (nil)")
     }
 
@@ -495,7 +503,7 @@ mod parser_tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let errors = Parser::parse(tokens).unwrap_err();
+        let errors = Parser::parse(tokens, false).unwrap_err();
         assert_eq!(errors.parser_errors.len(), 2);
         assert_matches!(
             &errors.parser_errors[0],

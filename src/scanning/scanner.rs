@@ -47,8 +47,17 @@ impl Scanner {
     pub fn scan(
         source: String,
         named_source: NamedSource<String>,
+        verbose: bool,
     ) -> core::result::Result<Vec<Token>, ScannerErrors> {
-        Self::new(source, named_source).scan_tokens()
+        let scan_tokens = Self::new(source, named_source).scan_tokens()?;
+        if verbose {
+            eprintln!("Tokens:");
+            scan_tokens
+                .iter()
+                .for_each(|t| eprint!("{:?}, ", t.token_type));
+            eprintln!();
+        }
+        Ok(scan_tokens)
     }
 
     fn new(source: String, named_source: NamedSource<String>) -> Self {
