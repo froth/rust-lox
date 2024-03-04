@@ -22,9 +22,10 @@ mod value;
 
 fn main() {
     let args = Args::parse();
+    let lox = Lox::new(args.verbose);
     let result = match args.file {
-        Some(file) => run_file(file),
-        None => run_prompt(args).into_diagnostic(),
+        Some(file) => run_file(lox, file),
+        None => run_prompt(lox, args).into_diagnostic(),
     };
     match result {
         Ok(_) => (),
@@ -35,11 +36,10 @@ fn main() {
     };
 }
 
-fn run_file(file: String) -> miette::Result<()> {
+fn run_file(mut lox: Lox, file: String) -> miette::Result<()> {
     let contents = fs::read_to_string(file.clone()).into_diagnostic()?;
 
     let named_source = NamedSource::new(file, contents.clone());
-    let mut lox = Lox::default();
     lox.run(contents, named_source)
 }
 
@@ -51,7 +51,7 @@ struct MyHelper {
     highlighter: MatchingBracketHighlighter,
 }
 
-fn run_prompt(args: Args) -> rustyline::Result<()> {
+fn run_prompt(mut lox: Lox, args: Args) -> rustyline::Result<()> {
     let history_file = args.history_file;
     let mut rl = Editor::new()?;
     rl.set_helper(Some(MyHelper::default()));
@@ -61,7 +61,6 @@ fn run_prompt(args: Args) -> rustyline::Result<()> {
             eprintln!("Error: {:?}", err)
         }
     }
-    let mut lox = Lox::default();
     loop {
         let readline = rl.readline(">> ");
         match readline {
