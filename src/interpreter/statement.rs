@@ -17,6 +17,7 @@ impl Interpreter {
                 .map(|value| self.printer.print(value)),
             Var(key, initializer) => self.define_var(key, initializer),
             Block(stmts) => self.execute_block(stmts),
+            If(_, _, _) => todo!(),
         }
     }
 

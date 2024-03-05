@@ -49,21 +49,33 @@ pub enum StmtType {
     Print(Expr),
     Var(Name, Option<Expr>),
     Block(Vec<Stmt>),
+    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
 }
 
 impl Display for Stmt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use StmtType::*;
         match &self.stmt_type {
-            StmtType::Expression(expr) => {
-                writeln!(f, "Expr{}", expr)
-            }
-            StmtType::Print(expr) => writeln!(f, "Print{}", expr),
-            StmtType::Var(name, Some(expr)) => writeln!(f, "Var {} = {}", name, expr),
-            StmtType::Var(name, None) => writeln!(f, "Var {}", name),
-            StmtType::Block(stmts) => {
+            Expression(expr) => writeln!(f, "Expr{}", expr),
+            Print(expr) => writeln!(f, "Print{}", expr),
+            Var(name, Some(expr)) => writeln!(f, "Var {} = {}", name, expr),
+            Var(name, None) => writeln!(f, "Var {}", name),
+            Block(stmts) => {
                 writeln!(f, "{{")?;
                 stmts.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
+            }
+            If(condition, then_branch, Some(else_branch)) => {
+                writeln!(f, "if {}", condition)?;
+                writeln!(f, "{}", then_branch)?;
+                writeln!(f, "else")?;
+                writeln!(f, "{}", else_branch)?;
+                writeln!(f, "endif")
+            }
+            If(condition, then_branch, None) => {
+                writeln!(f, "if {}", condition)?;
+                writeln!(f, "{}", then_branch)?;
+                writeln!(f, "endif")
             }
         }
     }
