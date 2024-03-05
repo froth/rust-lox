@@ -796,6 +796,7 @@ dependencies = [
  "miette",
  "phf",
  "rustyline",
+ "serde_json",
  "strum",
  "thiserror",
 ]
