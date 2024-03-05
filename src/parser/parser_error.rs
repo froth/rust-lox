@@ -6,6 +6,13 @@ use crate::ast::expr::Expr;
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
 pub enum ParserError {
+    #[error("Expected (")]
+    ExpectedLeftParen {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
     #[error("Expected )")]
     ExpectedRightParan {
         #[source_code]
@@ -43,7 +50,7 @@ pub enum ParserError {
         expr: Option<Expr>, //for interpreting expr in repl without
         #[source_code]
         src: Arc<NamedSource<String>>,
-        #[label("expression")]
+        #[label("; expected")]
         location: SourceSpan,
     },
 

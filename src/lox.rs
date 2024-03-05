@@ -57,15 +57,13 @@ impl Lox {
 
 #[cfg(test)]
 mod lox_tests {
-    use std::fmt::{format, Write};
-
     use crate::{
         interpreter::printer::{vec_printer::VecPrinter, Printer},
         interpreter::Interpreter,
     };
     use datadriven::walk;
-    use miette::{EyreContext, NamedSource};
-    use serde_json::{Serializer, Value};
+    use miette::NamedSource;
+    use serde_json::Value;
 
     use super::Lox;
     impl Lox {
@@ -89,15 +87,19 @@ mod lox_tests {
                 if test_case.directive == "error" {
                     let err = result.unwrap_err();
                     let handler = miette::JSONReportHandler::new();
-                    let mut string = String::new();
-                    handler.render_report(&mut string, err.as_ref()).unwrap();
-                    let x: Value = serde_json::from_str(string.as_str()).unwrap();
-                    serde_json::to_string_pretty(&x).unwrap()
+                    let mut json = String::new();
+                    handler.render_report(&mut json, err.as_ref()).unwrap();
+                    format_json(json)
                 } else {
                     result.unwrap();
                     printer.get_output()
                 }
             })
         });
+    }
+
+    fn format_json(json: String) -> String {
+        let x: Value = serde_json::from_str(json.as_str()).unwrap();
+        serde_json::to_string_pretty(&x).unwrap()
     }
 }
