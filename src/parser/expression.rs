@@ -1,6 +1,8 @@
 use crate::ast::expr::Literal::{self};
 use crate::ast::expr::{Expr, NameExpr};
+use crate::ast::token::Token;
 use crate::ast::{expr::ExprType, token::TokenType};
+use crate::parser::macros::consume;
 use crate::source_span_extensions::SourceSpanExtensions;
 
 use super::parser_error::ParserError::*;
@@ -97,16 +99,14 @@ impl Parser {
             Identifier(name) => Expr::variable(name, token),
             LeftParen => {
                 let expr = self.expression()?;
-                let peek = self.peek().clone();
-                if let RightParen = peek.token_type {
-                    self.advance();
-                } else {
-                    Err(ExpectedRightParan {
-                        src: peek.src.clone(),
-                        location: peek.location,
-                    })?
-                }
-                let location = token.location.until(peek.location);
+
+                let right_paren = consume!(self, TokenType::RightParen, |t: &Token| {
+                    ExpectedRightParan {
+                        src: t.src.clone(),
+                        location: self.previous_if_eof(t.location),
+                    }
+                })?;
+                let location = token.location.until(right_paren.location);
                 Expr::new(ExprType::grouping(expr), location, token.src)
             }
             Eof => Err(UnexpectedEof {

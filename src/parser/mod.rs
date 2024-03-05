@@ -2,13 +2,14 @@ mod expression;
 pub mod parser_error;
 mod statement;
 
+use miette::SourceSpan;
+
 use crate::ast::{
     stmt::Stmt,
     token::{Token, TokenType},
 };
 
 use self::parser_error::{ParserError, ParserErrors};
-
 mod macros {
     macro_rules! match_token {
         ($self:ident, $pattern:pat $(if $guard:expr)?) => {
@@ -18,6 +19,19 @@ mod macros {
             }
         };
     }
+
+    macro_rules! consume {
+        ($self:ident, $pattern:pat $(if $guard:expr)?, $err_create: expr) => {{
+            let peek = $self.peek();
+            let closure = $err_create;
+            match peek.token_type {
+                $pattern $(if $guard)? => Ok($self.advance()),
+                _ => Err(closure(peek))
+            }
+        }};
+    }
+
+    pub(super) use consume;
     pub(super) use match_token;
 }
 
@@ -105,6 +119,16 @@ impl Parser {
 
     fn previous(&mut self) -> &Token {
         &self.tokens[self.current - 1]
+    }
+
+    fn previous_if_eof(&self, location: SourceSpan) -> SourceSpan {
+        let len = self.tokens.len();
+        assert!(len > 1);
+        if location == self.tokens[len - 1].location {
+            self.tokens[len - 2].location
+        } else {
+            location
+        }
     }
 }
 

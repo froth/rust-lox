@@ -4,13 +4,13 @@ use miette::{NamedSource, SourceSpan};
 
 use crate::{ast::token::Token, source_span_extensions::SourceSpanExtensions};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NameExpr {
     pub name: Name,
     pub location: SourceSpan,
     pub src: Arc<NamedSource<String>>,
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expr {
     pub expr_type: ExprType,
     pub location: SourceSpan,
@@ -89,7 +89,7 @@ impl Display for Expr {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExprType {
     Assign(NameExpr, Box<Expr>),
     Binary(Box<Expr>, Token, Box<Expr>),
@@ -146,7 +146,7 @@ impl ExprType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Literal {
     String(String),
     Number(f32),

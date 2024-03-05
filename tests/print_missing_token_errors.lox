@@ -1,0 +1,47 @@
+error
+print 1 a
+print (1;
+----
+----
+{
+  "causes": [],
+  "labels": [],
+  "message": "Errors while parsing",
+  "related": [
+    {
+      "causes": [],
+      "filename": "tests/print_missing_token_errors.lox",
+      "labels": [
+        {
+          "label": "; expected",
+          "span": {
+            "length": 1,
+            "offset": 8
+          }
+        }
+      ],
+      "message": "Expected ';' after expression",
+      "related": [],
+      "severity": "error"
+    },
+    {
+      "causes": [],
+      "filename": "tests/print_missing_token_errors.lox",
+      "labels": [
+        {
+          "label": "here",
+          "span": {
+            "length": 1,
+            "offset": 18
+          }
+        }
+      ],
+      "message": "Expected )",
+      "related": [],
+      "severity": "error"
+    }
+  ],
+  "severity": "error"
+}
+----
+---- (no newline)

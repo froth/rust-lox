@@ -4,12 +4,12 @@ use std::vec;
 use miette::{NamedSource, SourceSpan};
 
 use crate::ast::stmt::{Stmt, StmtType};
-use crate::ast::token::TokenType;
+use crate::ast::token::{Token, TokenType};
 use crate::source_span_extensions::SourceSpanExtensions;
 
 use super::parser_error::ParserError::*;
 
-use super::macros::match_token;
+use super::macros::{consume, match_token};
 use super::{Parser, Result};
 
 struct InternalBlock {
@@ -42,11 +42,15 @@ impl Parser {
             if match_token!(self, TokenType::Equal).is_some() {
                 expr = Some(self.expression()?)
             }
-            let semicolon_location = self.expect_semicolon(var_location, src.clone())?;
+            let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| ExpectedSemicolon {
+                expr: None,
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            })?;
             Ok(Stmt::var(
                 name,
                 expr,
-                var_location.until(semicolon_location),
+                var_location.until(semicolon.location),
                 src,
             ))
         } else {
@@ -62,6 +66,7 @@ impl Parser {
         match self.peek().token_type {
             Print => self.print_statement(),
             LeftBrace => self.block_statement(),
+            If => self.if_statement(),
             _ => self.expression_statement(),
         }
     }
@@ -75,6 +80,19 @@ impl Parser {
         })
     }
 
+    fn if_statement(&mut self) -> Result<Stmt> {
+        let if_location = self.advance().location;
+
+        let left_paren = consume!(self, TokenType::RightBrace, |t: &Token| {
+            ExpectedLeftParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        })?;
+
+        todo!()
+    }
+
     fn block(&mut self) -> Result<InternalBlock> {
         let left_brace_location = self.advance().location;
         let mut stmts = vec![];
@@ -82,67 +100,41 @@ impl Parser {
             stmts.push(self.declaration()?);
         }
 
-        let peek = self.peek();
+        let right_brace = consume!(self, TokenType::RightBrace, |t: &Token| {
+            ExpectedRightBrace {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        })?;
 
-        if let TokenType::RightBrace = peek.token_type {
-            let right_brace = self.advance();
-            Ok(InternalBlock {
-                stmts,
-                location: left_brace_location.until(right_brace.location),
-                src: right_brace.src.clone(),
-            })
-        } else {
-            Err(ExpectedRightBrace {
-                src: peek.src.clone(),
-                location: peek.location,
-            })
-        }
+        Ok(InternalBlock {
+            stmts,
+            location: left_brace_location.until(right_brace.location),
+            src: right_brace.src.clone(),
+        })
     }
 
     fn expression_statement(&mut self) -> Result<Stmt> {
         let expr = self.expression()?;
-        let semicolon_location = match self.expect_semicolon(expr.location, expr.src.clone()) {
-            Ok(location) => location,
-            Err(ExpectedSemicolon {
-                expr: _,
-                src,
-                location,
-            }) => {
-                return Err(ExpectedSemicolon {
-                    expr: Some(expr),
-                    src,
-                    location,
-                })
-            }
-            err => err?,
-        };
-        let location = expr.location.until(semicolon_location);
+        let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| ExpectedSemicolon {
+            expr: Some(expr.clone()), // this clone is technically not needed but "expr is moved into closure" and other solutions would be more ugly
+            src: t.src.clone(),
+            location: self.previous_if_eof(t.location),
+        })?;
+        let location = expr.location.until(semicolon.location);
         Ok(Stmt::expr(expr, location))
     }
 
     fn print_statement(&mut self) -> Result<Stmt> {
         let print_token_location = self.advance().location;
         let expr = self.expression()?;
-        let semicolon_location = self.expect_semicolon(expr.location, expr.src.clone())?;
-        let location = print_token_location.until(semicolon_location);
+        let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| ExpectedSemicolon {
+            expr: None,
+            src: t.src.clone(),
+            location: self.previous_if_eof(t.location),
+        })?;
+        let location = print_token_location.until(semicolon.location);
         Ok(Stmt::print(expr, location))
-    }
-
-    fn expect_semicolon(
-        &mut self,
-        last_location: SourceSpan,
-        src: Arc<NamedSource<String>>,
-    ) -> Result<SourceSpan> {
-        if let Some(semicolon) = match_token!(self, TokenType::Semicolon) {
-            let location = semicolon.location;
-            Ok(location)
-        } else {
-            Err(ExpectedSemicolon {
-                expr: None,
-                src,
-                location: last_location,
-            })
-        }
     }
 }
 
@@ -173,8 +165,27 @@ mod tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let stmts = parse_stmt(tokens).unwrap();
-        assert_eq!(stmts.to_string().trim_end(), r#"Print("foo")"#);
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(stmt.to_string().trim_end(), r#"Print("foo")"#);
+    }
+
+    #[test]
+    fn not_return_eof_location_on_missing_semicolon() {
+        let string: String = "foo".into();
+        let tokens = vec![
+            token(TokenType::Print),
+            token_with_location(TokenType::String(string.clone()), (7, 1).into()),
+            token_with_location(TokenType::Eof, (8, 1).into()),
+        ];
+        let err = parse_stmt(tokens).unwrap_err();
+        assert_matches!(
+            err,
+            ParserError::ExpectedSemicolon {
+                expr: _,
+                src: _,
+                location,
+            } if location == (7,1).into()
+        )
     }
 
     #[test]
@@ -230,9 +241,9 @@ mod tests {
             token(TokenType::Semicolon),
             token(TokenType::Eof),
         ];
-        let errs = parse_stmt(tokens).unwrap_err();
+        let err = parse_stmt(tokens).unwrap_err();
         assert_matches!(
-            errs,
+            err,
             ParserError::ExpectedRightBrace {
                 src: _,
                 location: _,
