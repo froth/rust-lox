@@ -2,7 +2,7 @@ use miette::NamedSource;
 
 use crate::{
     interpreter::Interpreter,
-    parsing::{parser_error::ParserError::ExpectedSemicolon, Parser},
+    parser::{parser_error::ParserError::ExpectedSemicolon, Parser},
     scanning::Scanner,
     value::Value,
 };
