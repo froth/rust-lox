@@ -10,7 +10,7 @@ print (1;
   "related": [
     {
       "causes": [],
-      "filename": "tests/print_missing_token_errors.lox",
+      "filename": "tests/parser_errors/print_missing_token_errors.lox",
       "labels": [
         {
           "label": "; expected",
@@ -26,7 +26,7 @@ print (1;
     },
     {
       "causes": [],
-      "filename": "tests/print_missing_token_errors.lox",
+      "filename": "tests/parser_errors/print_missing_token_errors.lox",
       "labels": [
         {
           "label": "here",

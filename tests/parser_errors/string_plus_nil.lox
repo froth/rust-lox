@@ -1,0 +1,37 @@
+error
+""+nil;
+----
+----
+{
+  "causes": [],
+  "filename": "tests/parser_errors/string_plus_nil.lox",
+  "help": "Change operands to be both String or Number",
+  "labels": [
+    {
+      "label": "operator",
+      "span": {
+        "length": 1,
+        "offset": 2
+      }
+    },
+    {
+      "label": "String",
+      "span": {
+        "length": 2,
+        "offset": 0
+      }
+    },
+    {
+      "label": "Nil",
+      "span": {
+        "length": 3,
+        "offset": 3
+      }
+    }
+  ],
+  "message": "Wrong operand types for operator + : expected both String of both Number but got String and Nil",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

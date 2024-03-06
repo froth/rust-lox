@@ -11,7 +11,7 @@ if(1==2) print "no"; else;
   "related": [
     {
       "causes": [],
-      "filename": "tests/if_then_else_errors.lox",
+      "filename": "tests/parser_errors/if_then_else_errors.lox",
       "labels": [
         {
           "label": "here",
@@ -27,7 +27,7 @@ if(1==2) print "no"; else;
     },
     {
       "causes": [],
-      "filename": "tests/if_then_else_errors.lox",
+      "filename": "tests/parser_errors/if_then_else_errors.lox",
       "labels": [
         {
           "label": "here",
@@ -43,7 +43,7 @@ if(1==2) print "no"; else;
     },
     {
       "causes": [],
-      "filename": "tests/if_then_else_errors.lox",
+      "filename": "tests/parser_errors/if_then_else_errors.lox",
       "labels": [
         {
           "label": "here",
