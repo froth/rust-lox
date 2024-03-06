@@ -1,39 +1,15 @@
 mod expression;
+mod macros;
 pub mod parser_error;
 mod statement;
 
 use miette::SourceSpan;
 
+use self::parser_error::{ParserError, ParserErrors};
 use crate::ast::{
     stmt::Stmt,
     token::{Token, TokenType},
 };
-
-use self::parser_error::{ParserError, ParserErrors};
-mod macros {
-    macro_rules! match_token {
-        ($self:ident, $pattern:pat $(if $guard:expr)?) => {
-            match $self.peek().token_type {
-                $pattern $(if $guard)? => Some($self.advance()),
-                _ => None
-            }
-        };
-    }
-
-    macro_rules! consume {
-        ($self:ident, $pattern:pat $(if $guard:expr)?, $err_create: expr) => {{
-            let peek = $self.peek();
-            let closure = $err_create;
-            match peek.token_type {
-                $pattern $(if $guard)? => Ok($self.advance()),
-                _ => Err(closure(peek))
-            }
-        }};
-    }
-
-    pub(super) use consume;
-    pub(super) use match_token;
-}
 
 pub type Result<T> = core::result::Result<T, ParserError>;
 

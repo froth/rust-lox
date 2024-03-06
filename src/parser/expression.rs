@@ -105,7 +105,7 @@ impl Parser {
                         src: t.src.clone(),
                         location: self.previous_if_eof(t.location),
                     }
-                })?;
+                });
                 let location = token.location.until(right_paren.location);
                 Expr::new(ExprType::grouping(expr), location, token.src)
             }
