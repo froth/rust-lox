@@ -1,0 +1,9 @@
+interpret
+if(true) print "a";
+if(false) print "no";
+if(1==2) print "no"; else print "b";
+if(1) print "c"; else print "no";
+----
+a
+b
+c

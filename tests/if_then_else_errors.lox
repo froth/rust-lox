@@ -1,0 +1,64 @@
+error
+if(true print "a";
+if false) print "no";
+if(1==2) print "no"; else;
+----
+----
+{
+  "causes": [],
+  "labels": [],
+  "message": "Errors while parsing",
+  "related": [
+    {
+      "causes": [],
+      "filename": "tests/if_then_else_errors.lox",
+      "labels": [
+        {
+          "label": "here",
+          "span": {
+            "length": 5,
+            "offset": 8
+          }
+        }
+      ],
+      "message": "Expected )",
+      "related": [],
+      "severity": "error"
+    },
+    {
+      "causes": [],
+      "filename": "tests/if_then_else_errors.lox",
+      "labels": [
+        {
+          "label": "here",
+          "span": {
+            "length": 5,
+            "offset": 22
+          }
+        }
+      ],
+      "message": "Expected (",
+      "related": [],
+      "severity": "error"
+    },
+    {
+      "causes": [],
+      "filename": "tests/if_then_else_errors.lox",
+      "labels": [
+        {
+          "label": "here",
+          "span": {
+            "length": 1,
+            "offset": 66
+          }
+        }
+      ],
+      "message": "Expected expression",
+      "related": [],
+      "severity": "error"
+    }
+  ],
+  "severity": "error"
+}
+----
+---- (no newline)
