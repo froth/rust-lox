@@ -46,7 +46,7 @@ impl Parser {
                 expr: None,
                 src: t.src.clone(),
                 location: self.previous_if_eof(t.location),
-            })?;
+            });
             Ok(Stmt::var(
                 name,
                 expr,
@@ -88,7 +88,7 @@ impl Parser {
                 src: t.src.clone(),
                 location: self.previous_if_eof(t.location),
             }
-        })?;
+        });
 
         todo!()
     }
@@ -105,7 +105,7 @@ impl Parser {
                 src: t.src.clone(),
                 location: self.previous_if_eof(t.location),
             }
-        })?;
+        });
 
         Ok(InternalBlock {
             stmts,
@@ -117,10 +117,10 @@ impl Parser {
     fn expression_statement(&mut self) -> Result<Stmt> {
         let expr = self.expression()?;
         let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| ExpectedSemicolon {
-            expr: Some(expr.clone()), // this clone is technically not needed but "expr is moved into closure" and other solutions would be more ugly
+            expr: Some(expr),
             src: t.src.clone(),
             location: self.previous_if_eof(t.location),
-        })?;
+        });
         let location = expr.location.until(semicolon.location);
         Ok(Stmt::expr(expr, location))
     }
@@ -132,7 +132,7 @@ impl Parser {
             expr: None,
             src: t.src.clone(),
             location: self.previous_if_eof(t.location),
-        })?;
+        });
         let location = print_token_location.until(semicolon.location);
         Ok(Stmt::print(expr, location))
     }
