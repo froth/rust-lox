@@ -7,7 +7,7 @@ use crate::ast::stmt::{Stmt, StmtType};
 use crate::ast::token::{Token, TokenType};
 use crate::source_span_extensions::SourceSpanExtensions;
 
-use super::parser_error::ParserError::*;
+use super::parser_error::ParserError::{self, *};
 
 use super::macros::{consume, match_token};
 use super::{Parser, Result};
@@ -32,21 +32,18 @@ impl Parser {
     }
 
     fn var_declaration(&mut self) -> Result<Stmt> {
+        use TokenType::*;
         let var_location = self.advance().location;
         let peek = self.peek();
         let src = peek.src.clone();
-        if let TokenType::Identifier(name) = &peek.token_type {
+        if let Identifier(name) = &peek.token_type {
             let name = name.clone();
             self.advance();
             let mut expr = None;
             if match_token!(self, TokenType::Equal).is_some() {
                 expr = Some(self.expression()?)
             }
-            let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| ExpectedSemicolon {
-                expr: None,
-                src: t.src.clone(),
-                location: self.previous_if_eof(t.location),
-            });
+            let semicolon = consume!(self, Semicolon, |t| self.expected_semicolon(t));
             Ok(Stmt::var(
                 name,
                 expr,
@@ -81,9 +78,10 @@ impl Parser {
     }
 
     fn if_statement(&mut self) -> Result<Stmt> {
+        use TokenType::*;
         let if_location = self.advance().location;
 
-        let left_paren = consume!(self, TokenType::RightBrace, |t: &Token| {
+        let left_paren = consume!(self, LeftParen, |t: &Token| {
             ExpectedLeftParen {
                 src: t.src.clone(),
                 location: self.previous_if_eof(t.location),
@@ -128,13 +126,17 @@ impl Parser {
     fn print_statement(&mut self) -> Result<Stmt> {
         let print_token_location = self.advance().location;
         let expr = self.expression()?;
-        let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| ExpectedSemicolon {
+        let semicolon = consume!(self, TokenType::Semicolon, |t| self.expected_semicolon(t));
+        let location = print_token_location.until(semicolon.location);
+        Ok(Stmt::print(expr, location))
+    }
+
+    fn expected_semicolon(&self, t: &Token) -> ParserError {
+        ExpectedSemicolon {
             expr: None,
             src: t.src.clone(),
             location: self.previous_if_eof(t.location),
-        });
-        let location = print_token_location.until(semicolon.location);
-        Ok(Stmt::print(expr, location))
+        }
     }
 }
 
