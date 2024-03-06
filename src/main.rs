@@ -43,15 +43,15 @@ fn run_file(mut lox: Lox, file: String) -> miette::Result<()> {
     lox.run(contents, named_source)
 }
 
-#[derive(Helper, Completer, Hinter, Validator, Highlighter, Default)]
-struct MyHelper {
-    #[rustyline(Validator)]
-    validator: MatchingBracketValidator,
-    #[rustyline(Highlighter)]
-    highlighter: MatchingBracketHighlighter,
-}
-
 fn run_prompt(mut lox: Lox, args: Args) -> rustyline::Result<()> {
+    #[derive(Helper, Completer, Hinter, Validator, Highlighter, Default)]
+    struct MyHelper {
+        #[rustyline(Validator)]
+        validator: MatchingBracketValidator,
+        #[rustyline(Highlighter)]
+        highlighter: MatchingBracketHighlighter,
+    }
+
     let history_file = args.history_file;
     let mut rl = Editor::new()?;
     rl.set_helper(Some(MyHelper::default()));
