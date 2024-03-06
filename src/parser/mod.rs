@@ -134,14 +134,14 @@ mod tests {
         assert_eq!(errors.parser_errors.len(), 2);
         assert_matches!(
             &errors.parser_errors[0],
-            ParserError::ExpectedRightParan {
+            ParserError::ExpectedRightParen {
                 src: _,
                 location: _,
             }
         );
         assert_matches!(
             &errors.parser_errors[1],
-            ParserError::ExpectedRightParan {
+            ParserError::ExpectedRightParen {
                 src: _,
                 location: _,
             }

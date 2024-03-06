@@ -41,6 +41,20 @@ impl Stmt {
             location,
         }
     }
+
+    pub fn if_stmt(
+        condition: Expr,
+        then_stmt: Stmt,
+        else_stmt: Option<Stmt>,
+        location: SourceSpan,
+    ) -> Self {
+        let src = condition.src.clone();
+        Stmt {
+            stmt_type: StmtType::If(condition, then_stmt.into(), else_stmt.map(Box::new)),
+            src,
+            location,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -67,14 +81,14 @@ impl Display for Stmt {
             }
             If(condition, then_branch, Some(else_branch)) => {
                 writeln!(f, "if {}", condition)?;
-                writeln!(f, "{}", then_branch)?;
+                write!(f, "{}", then_branch)?;
                 writeln!(f, "else")?;
-                writeln!(f, "{}", else_branch)?;
+                write!(f, "{}", else_branch)?;
                 writeln!(f, "endif")
             }
             If(condition, then_branch, None) => {
                 writeln!(f, "if {}", condition)?;
-                writeln!(f, "{}", then_branch)?;
+                write!(f, "{}", then_branch)?;
                 writeln!(f, "endif")
             }
         }

@@ -81,14 +81,36 @@ impl Parser {
         use TokenType::*;
         let if_location = self.advance().location;
 
-        let left_paren = consume!(self, LeftParen, |t: &Token| {
+        consume!(self, LeftParen, |t: &Token| {
             ExpectedLeftParen {
                 src: t.src.clone(),
                 location: self.previous_if_eof(t.location),
             }
         });
 
-        todo!()
+        let condition = self.expression()?;
+
+        consume!(self, RightParen, |t: &Token| {
+            ExpectedRightParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        let then_statement = self.statement()?;
+
+        let else_statement = match match_token!(self, Else) {
+            Some(_) => Some(self.statement()?),
+            None => None,
+        };
+        let location = if_location.until(then_statement.location);
+
+        Ok(Stmt::if_stmt(
+            condition,
+            then_statement,
+            else_statement,
+            location,
+        ))
     }
 
     fn block(&mut self) -> Result<InternalBlock> {
@@ -229,8 +251,8 @@ mod tests {
             token(TokenType::RightBrace),
             token(TokenType::Eof),
         ];
-        let stmts = parse_stmt(tokens).unwrap();
-        assert_eq!(stmts.to_string().trim_end(), "{\nExpr(nil)\nExpr(nil)\n}")
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(stmt.to_string().trim_end(), "{\nExpr(nil)\nExpr(nil)\n}")
     }
 
     #[test]
@@ -247,6 +269,82 @@ mod tests {
         assert_matches!(
             err,
             ParserError::ExpectedRightBrace {
+                src: _,
+                location: _,
+            }
+        )
+    }
+
+    #[test]
+    fn parse_if_then_else() {
+        let tokens = vec![
+            token(TokenType::If),
+            token(TokenType::LeftParen),
+            token(TokenType::Nil),
+            token(TokenType::RightParen),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Else),
+            token(TokenType::False),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(
+            stmt.to_string().trim_end(),
+            "if (nil)\nExpr(nil)\nelse\nExpr(false)\nendif"
+        )
+    }
+
+    #[test]
+    fn parse_if_then() {
+        let tokens = vec![
+            token(TokenType::If),
+            token(TokenType::LeftParen),
+            token(TokenType::Nil),
+            token(TokenType::RightParen),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(stmt.to_string().trim_end(), "if (nil)\nExpr(nil)\nendif")
+    }
+
+    #[test]
+    fn parse_if_then_missing_left_paren() {
+        let tokens = vec![
+            token(TokenType::If),
+            token(TokenType::Nil),
+            token(TokenType::RightParen),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let err = parse_stmt(tokens).unwrap_err();
+        assert_matches!(
+            err,
+            ParserError::ExpectedLeftParen {
+                src: _,
+                location: _,
+            }
+        )
+    }
+
+    #[test]
+    fn parse_if_then_missing_right_paren() {
+        let tokens = vec![
+            token(TokenType::If),
+            token(TokenType::LeftParen),
+            token(TokenType::Nil),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let err = parse_stmt(tokens).unwrap_err();
+        assert_matches!(
+            err,
+            ParserError::ExpectedRightParen {
                 src: _,
                 location: _,
             }

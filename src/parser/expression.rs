@@ -101,7 +101,7 @@ impl Parser {
                 let expr = self.expression()?;
 
                 let right_paren = consume!(self, TokenType::RightParen, |t: &Token| {
-                    ExpectedRightParan {
+                    ExpectedRightParen {
                         src: t.src.clone(),
                         location: self.previous_if_eof(t.location),
                     }
@@ -213,7 +213,7 @@ mod tests {
         let err = parse_expr(tokens).unwrap_err();
         assert_matches!(
             err,
-            ParserError::ExpectedRightParan {
+            ParserError::ExpectedRightParen {
                 src: _,
                 location: _,
             }
