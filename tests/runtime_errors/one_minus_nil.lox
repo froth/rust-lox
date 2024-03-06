@@ -1,0 +1,30 @@
+error
+1-nil;
+----
+----
+{
+  "causes": [],
+  "filename": "tests/runtime_errors/one_minus_nil.lox",
+  "help": "Change operand to Number",
+  "labels": [
+    {
+      "label": "operator",
+      "span": {
+        "length": 1,
+        "offset": 1
+      }
+    },
+    {
+      "label": "Nil",
+      "span": {
+        "length": 3,
+        "offset": 2
+      }
+    }
+  ],
+  "message": "Wrong operand type for operator - : expected Number but got Nil",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)
