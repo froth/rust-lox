@@ -44,14 +44,6 @@ impl Interpreter {
         }
     }
 
-    fn is_truthy(value: Value) -> bool {
-        match value {
-            Value::Boolean(bool) => bool,
-            Value::Nil => false,
-            _ => true,
-        }
-    }
-
     fn handle_numbers(
         &mut self,
         left: &Expr,
@@ -155,7 +147,7 @@ impl Interpreter {
                     })
                 }
             }
-            TokenType::Bang => Ok(Value::Boolean(!Self::is_truthy(right))),
+            TokenType::Bang => Ok(Value::Boolean(!right.is_truthy())),
             t => panic!("Wrong token type:{}, should have been handled by parser", t),
         }
     }

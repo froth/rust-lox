@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use crate::{
     ast::{
         expr::{Expr, Name},
@@ -17,7 +19,9 @@ impl Interpreter {
                 .map(|value| self.printer.print(value)),
             Var(key, initializer) => self.define_var(key, initializer),
             Block(stmts) => self.execute_block(stmts),
-            If(_, _, _) => todo!(),
+            If(condition, then_stmt, else_stmt) => {
+                self.execute_if(condition, *then_stmt, else_stmt.map(|x| *x))
+            }
         }
     }
 
@@ -32,6 +36,20 @@ impl Interpreter {
         let result = stmts.into_iter().try_for_each(|s| self.interpret_stmt(s));
         self.pop_environment();
         result
+    }
+
+    fn execute_if(
+        &mut self,
+        condition: Expr,
+        then_stmt: Stmt,
+        else_stmt: Option<Stmt>,
+    ) -> Result<()> {
+        if self.interpret_expr(&condition)?.is_truthy() {
+            self.interpret_stmt(then_stmt)?;
+        } else if let Some(else_stmt) = else_stmt {
+            self.interpret_stmt(else_stmt)?;
+        }
+        Ok(())
     }
 }
 #[cfg(test)]
