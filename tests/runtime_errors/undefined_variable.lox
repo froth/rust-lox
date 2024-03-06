@@ -1,0 +1,22 @@
+error
+print a;
+----
+----
+{
+  "causes": [],
+  "filename": "tests/runtime_errors/undefined_variable.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 1,
+        "offset": 6
+      }
+    }
+  ],
+  "message": "Undefined variable 'a'",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

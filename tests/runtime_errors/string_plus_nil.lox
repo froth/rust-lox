@@ -4,7 +4,7 @@ error
 ----
 {
   "causes": [],
-  "filename": "tests/parser_errors/string_plus_nil.lox",
+  "filename": "tests/runtime_errors/string_plus_nil.lox",
   "help": "Change operands to be both String or Number",
   "labels": [
     {
