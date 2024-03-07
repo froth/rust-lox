@@ -12,13 +12,15 @@ use super::{Interpreter, Result};
 
 impl Interpreter {
     pub fn interpret_expr(&mut self, expr: &Expr) -> Result<Value> {
+        use ExprType::*;
         match &expr.expr_type {
-            ExprType::Binary(left, token, right) => self.interpret_binary(left, token, right),
-            ExprType::Grouping(expr) => self.interpret_expr(expr),
-            ExprType::Literal(l) => l.interpret(),
-            ExprType::Unary(token, expr) => self.interpret_unary(token, expr),
-            ExprType::Variable(name) => self.read_variable(name, expr),
-            ExprType::Assign(name, expr) => self.assign_variable(name, expr),
+            Binary(left, token, right) => self.interpret_binary(left, token, right),
+            Logical(left, token, right) => self.interpret_logical(left, token, right),
+            Grouping(expr) => self.interpret_expr(expr),
+            Literal(l) => l.interpret(),
+            Unary(token, expr) => self.interpret_unary(token, expr),
+            Variable(name) => self.read_variable(name, expr),
+            Assign(name, expr) => self.assign_variable(name, expr),
         }
     }
 
@@ -113,20 +115,36 @@ impl Interpreter {
     }
 
     fn interpret_binary(&mut self, left: &Expr, token: &Token, right: &Expr) -> Result<Value> {
-        match token.token_type {
-            TokenType::Minus => self.handle_numbers(left, token, right, |l, r| (l - r).into()),
-            TokenType::Slash => self.handle_numbers(left, token, right, |l, r| (l / r).into()),
-            TokenType::Star => self.handle_numbers(left, token, right, |l, r| (l * r).into()),
-            TokenType::Plus => self.handle_plus_binary(left, token, right),
-            TokenType::Greater => self.handle_numbers(left, token, right, |l, r| (l > r).into()),
-            TokenType::GreaterEqual => {
-                self.handle_numbers(left, token, right, |l, r| (l >= r).into())
-            }
-            TokenType::Less => self.handle_numbers(left, token, right, |l, r| (l < r).into()),
-            TokenType::LessEqual => self.handle_numbers(left, token, right, |l, r| (l <= r).into()),
-            TokenType::BangEqual => self.handle_values(left, right, |l, r| l != r),
-            TokenType::EqualEqual => self.handle_values(left, right, |l, r| l == r),
-            _ => panic!("wrong token type in Expr::Binary, bug in parser"),
+        use TokenType::*;
+        match &token.token_type {
+            Minus => self.handle_numbers(left, token, right, |l, r| (l - r).into()),
+            Slash => self.handle_numbers(left, token, right, |l, r| (l / r).into()),
+            Star => self.handle_numbers(left, token, right, |l, r| (l * r).into()),
+            Plus => self.handle_plus_binary(left, token, right),
+            Greater => self.handle_numbers(left, token, right, |l, r| (l > r).into()),
+            GreaterEqual => self.handle_numbers(left, token, right, |l, r| (l >= r).into()),
+            Less => self.handle_numbers(left, token, right, |l, r| (l < r).into()),
+            LessEqual => self.handle_numbers(left, token, right, |l, r| (l <= r).into()),
+            BangEqual => self.handle_values(left, right, |l, r| l != r),
+            EqualEqual => self.handle_values(left, right, |l, r| l == r),
+            t => panic!(
+                "wrong token type \"{:?}\" in Expr::Binary, bug in parser",
+                t
+            ),
+        }
+    }
+
+    fn interpret_logical(&mut self, left: &Expr, token: &Token, right: &Expr) -> Result<Value> {
+        use TokenType::*;
+        let left = self.interpret_expr(left)?;
+        match &token.token_type {
+            Or if left.is_truthy() => Ok(left),
+            And if !left.is_truthy() => Ok(left),
+            And | Or => self.interpret_expr(right),
+            t => panic!(
+                "wrong token type \"{:?}\" in Expr::Logical, bug in parser",
+                t
+            ),
         }
     }
 

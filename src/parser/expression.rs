@@ -16,7 +16,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
         if match_token!(self, TokenType::Equal).is_some() {
             let value = self.assignment()?;
             if let ExprType::Variable(name) = &expr.expr_type {
@@ -33,6 +33,26 @@ impl Parser {
             });
         }
 
+        Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr> {
+        use TokenType::*;
+        let mut expr = self.and()?;
+        while let Some(token) = match_token!(self, Or).cloned() {
+            let right = self.and()?;
+            expr = Expr::logical(expr, token, right);
+        }
+        Ok(expr)
+    }
+
+    fn and(&mut self) -> Result<Expr> {
+        use TokenType::*;
+        let mut expr = self.equality()?;
+        while let Some(token) = match_token!(self, And).cloned() {
+            let right = self.equality()?;
+            expr = Expr::logical(expr, token, right);
+        }
         Ok(expr)
     }
 
@@ -184,6 +204,39 @@ mod tests {
         assert_eq!(expr.to_string().trim_end(), r#"(Minus (1))"#);
     }
 
+    #[test]
+    fn and_or_precedence() {
+        let tokens = vec![
+            token(TokenType::False),
+            token(TokenType::Or),
+            token(TokenType::False),
+            token(TokenType::And),
+            token(TokenType::True),
+            token(TokenType::Eof),
+        ];
+        let expr = parse_expr(tokens).unwrap();
+        assert_eq!(
+            expr.to_string().trim_end(),
+            "(Logical Or (false) (Logical And (false) (true)))"
+        );
+    }
+
+    #[test]
+    fn and_and() {
+        let tokens = vec![
+            token(TokenType::True),
+            token(TokenType::And),
+            token(TokenType::True),
+            token(TokenType::And),
+            token(TokenType::False),
+            token(TokenType::Eof),
+        ];
+        let expr = parse_expr(tokens).unwrap();
+        assert_eq!(
+            expr.to_string().trim_end(),
+            "(Logical And (Logical And (true) (true)) (false))"
+        );
+    }
     #[test]
     fn parse_grouping() {
         let string: String = "foo".into();

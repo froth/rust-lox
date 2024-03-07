@@ -1,0 +1,15 @@
+interpret
+var a = 0;
+print true and (true or false);
+print true and false;
+print false or true;
+print false and (a = 1);
+print a;
+print "hi" or 2;
+----
+true
+false
+true
+false
+0
+hi
