@@ -64,6 +64,7 @@ impl Parser {
             Print => self.print_statement(),
             LeftBrace => self.block_statement(),
             If => self.if_statement(),
+            While => self.while_statement(),
             _ => self.expression_statement(),
         }
     }
@@ -103,14 +104,43 @@ impl Parser {
             .is_some()
             .then(|| self.statement())
             .transpose()?;
-        let location = if_location.until(then_statement.location);
 
+        let end_location = else_statement
+            .as_ref()
+            .map(|s| s.location)
+            .unwrap_or(then_statement.location);
+        let location = if_location.until(end_location);
         Ok(Stmt::if_stmt(
             condition,
             then_statement,
             else_statement,
             location,
         ))
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt> {
+        use TokenType::*;
+        let while_location = self.advance().location;
+
+        consume!(self, LeftParen, |t: &Token| {
+            ExpectedLeftParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        let condition = self.expression()?;
+
+        consume!(self, RightParen, |t: &Token| {
+            ExpectedRightParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        let body = self.statement()?;
+        let location = while_location.until(body.location);
+        Ok(Stmt::while_stmt(condition, body, location))
     }
 
     fn block(&mut self) -> Result<InternalBlock> {
@@ -349,5 +379,20 @@ mod tests {
                 location: _,
             }
         )
+    }
+
+    #[test]
+    fn parse_while() {
+        let tokens = vec![
+            token(TokenType::While),
+            token(TokenType::LeftParen),
+            token(TokenType::Nil),
+            token(TokenType::RightParen),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(stmt.to_string().trim_end(), "while (nil) {\nExpr(nil)\n}")
     }
 }

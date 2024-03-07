@@ -1,0 +1,17 @@
+interpret
+var a = 0;
+var b = 0;
+while (a <= 10) {
+    if(b==2) {
+        b=0;
+        print a;
+    }
+    a = a+1;
+    b = b+1;
+}
+----
+2
+4
+6
+8
+10

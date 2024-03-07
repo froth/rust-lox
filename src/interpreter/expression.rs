@@ -356,7 +356,7 @@ mod value_interpreter_tests {
         let right = literal(false.into());
         let expr = Expr::assign(name_expr(name.clone()), right);
         let mut env = Environment::default();
-        env.define(name, Value::Nil);
+        env.define(&name, Value::Nil);
         let mut under_test = Interpreter::with_env(Box::new(VecPrinter::new()), env);
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap(),

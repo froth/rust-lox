@@ -20,9 +20,7 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
-        statements
-            .into_iter()
-            .try_for_each(|s| self.interpret_stmt(s))
+        statements.iter().try_for_each(|s| self.interpret_stmt(s))
     }
 
     fn push_environment(&mut self) {
