@@ -99,10 +99,10 @@ impl Parser {
 
         let then_statement = self.statement()?;
 
-        let else_statement = match match_token!(self, Else) {
-            Some(_) => Some(self.statement()?),
-            None => None,
-        };
+        let else_statement = match_token!(self, Else)
+            .is_some()
+            .then(|| self.statement())
+            .transpose()?;
         let location = if_location.until(then_statement.location);
 
         Ok(Stmt::if_stmt(
