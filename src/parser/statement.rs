@@ -3,6 +3,7 @@ use std::vec;
 
 use miette::{NamedSource, SourceSpan};
 
+use crate::ast::expr::{Expr, ExprType, Literal};
 use crate::ast::stmt::{Stmt, StmtType};
 use crate::ast::token::{Token, TokenType};
 use crate::source_span_extensions::SourceSpanExtensions;
@@ -65,6 +66,7 @@ impl Parser {
             LeftBrace => self.block_statement(),
             If => self.if_statement(),
             While => self.while_statement(),
+            For => self.for_statement(),
             _ => self.expression_statement(),
         }
     }
@@ -141,6 +143,81 @@ impl Parser {
         let body = self.statement()?;
         let location = while_location.until(body.location);
         Ok(Stmt::while_stmt(condition, body, location))
+    }
+
+    // source locations for the parts are weird but should not be needed anyways
+    fn for_statement(&mut self) -> Result<Stmt> {
+        use TokenType::*;
+        let for_location = self.advance().location;
+
+        consume!(self, LeftParen, |t: &Token| {
+            ExpectedLeftParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        let initializer = match self.peek().token_type {
+            Semicolon => {
+                self.advance();
+                None
+            }
+            Var => Some(self.var_declaration()?),
+            _ => Some(self.expression_statement()?),
+        };
+
+        let condition = if !matches!(self.peek().token_type, Semicolon) {
+            self.expression()?
+        } else {
+            Expr {
+                expr_type: ExprType::literal(Literal::Boolean(true)),
+                location: self.peek().location, // technical not correct but best we can do
+                src: self.peek().src.clone(),
+            }
+        };
+
+        consume!(self, Semicolon, |t| self.expected_semicolon(t));
+
+        let increment = if !matches!(self.peek().token_type, RightParen) {
+            Some(self.expression()?)
+        } else {
+            None
+        };
+
+        consume!(self, RightParen, |t: &Token| {
+            ExpectedRightParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        let mut body = self.statement()?;
+
+        let location = for_location.until(body.location);
+        body = if let Some(increment) = increment {
+            let increment_location = increment.location;
+            Stmt {
+                stmt_type: StmtType::Block(vec![body, Stmt::expr(increment, increment_location)]),
+                location,
+                src: condition.src.clone(),
+            }
+        } else {
+            body
+        };
+
+        let location = for_location.until(body.location);
+        let mut while_statement = Stmt::while_stmt(condition, body, location);
+
+        while_statement = if let Some(initializer) = initializer {
+            Stmt {
+                stmt_type: StmtType::Block(vec![initializer, while_statement]),
+                location,
+                src: self.peek().src.clone(),
+            }
+        } else {
+            while_statement
+        };
+        Ok(while_statement)
     }
 
     fn block(&mut self) -> Result<InternalBlock> {
@@ -394,5 +471,34 @@ mod tests {
         ];
         let stmt = parse_stmt(tokens).unwrap();
         assert_eq!(stmt.to_string().trim_end(), "while (nil) {\nExpr(nil)\n}")
+    }
+    #[test]
+    fn parse_and_desugar_for() {
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::For),
+            token(TokenType::LeftParen),
+            token(TokenType::Var),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Equal),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::EqualEqual),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Equal),
+            token(TokenType::True),
+            token(TokenType::RightParen),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(
+            stmt.to_string().trim_end(),
+            "{\nVar name = (nil)\nwhile (EqualEqual (variable name) (nil)) {\n{\nExpr(nil)\nExpr(name=(true))\n}\n}\n}"
+        )
     }
 }
