@@ -55,6 +55,15 @@ impl Stmt {
             location,
         }
     }
+
+    pub fn while_stmt(condition: Expr, body: Stmt, location: SourceSpan) -> Self {
+        let src = condition.src.clone();
+        Stmt {
+            stmt_type: StmtType::While(condition, body.into()),
+            src,
+            location,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -64,6 +73,7 @@ pub enum StmtType {
     Var(Name, Option<Expr>),
     Block(Vec<Stmt>),
     If(Expr, Box<Stmt>, Option<Box<Stmt>>),
+    While(Expr, Box<Stmt>),
 }
 
 impl Display for Stmt {
@@ -90,6 +100,11 @@ impl Display for Stmt {
                 writeln!(f, "if {}", condition)?;
                 write!(f, "{}", then_branch)?;
                 writeln!(f, "endif")
+            }
+            While(condition, body) => {
+                writeln!(f, "while {} {{", condition)?;
+                write!(f, "{}", body)?;
+                writeln!(f, "}}")
             }
         }
     }

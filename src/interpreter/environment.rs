@@ -9,8 +9,8 @@ pub struct Environment {
 }
 
 impl Environment {
-    pub fn define(&mut self, key: Name, value: Value) {
-        self.values.insert(key, value);
+    pub fn define(&mut self, key: &Name, value: Value) {
+        self.values.insert(key.clone(), value);
     }
 
     pub fn get(&self, key: &Name) -> Option<Value> {
@@ -54,7 +54,7 @@ mod environment_tests {
     fn define_get() {
         let mut env = Environment::default();
         let name = Name::new("x".to_string());
-        env.define(name.clone(), Value::Boolean(true));
+        env.define(&name, Value::Boolean(true));
         let returned = env.get(&name);
         assert_eq!(returned, Some(Value::Boolean(true)))
     }
@@ -63,7 +63,7 @@ mod environment_tests {
     fn define_assign_get() {
         let mut env = Environment::default();
         let name = Name::new("x".to_string());
-        env.define(name.clone(), Value::Boolean(true));
+        env.define(&name, Value::Boolean(true));
         let assigned = env.assign(&name, &Value::Boolean(false));
         assert!(assigned);
         let returned = env.get(&name);
@@ -84,7 +84,7 @@ mod environment_tests {
     fn define_get_from_parent() {
         let mut global = Environment::default();
         let name = Name::new("x".to_string());
-        global.define(name.clone(), Value::Boolean(true));
+        global.define(&name, Value::Boolean(true));
         let local = local(global);
         let returned = local.get(&name);
         assert_eq!(returned, Some(Value::Boolean(true)))
@@ -94,7 +94,7 @@ mod environment_tests {
     fn define_assign_to_parent() {
         let mut global = Environment::default();
         let name = Name::new("x".to_string());
-        global.define(name.clone(), Value::Nil);
+        global.define(&name, Value::Nil);
         let mut local = local(global);
         let assigned = local.assign(&name, &Value::Boolean(false));
         assert!(assigned);
@@ -107,9 +107,9 @@ mod environment_tests {
     fn shadowing() {
         let mut global = Environment::default();
         let name = Name::new("x".to_string());
-        global.define(name.clone(), Value::Nil);
+        global.define(&name, Value::Nil);
         let mut local = local(global);
-        local.define(name.clone(), Value::Boolean(false));
+        local.define(&name, Value::Boolean(false));
         let loc_return = local.get(&name);
         global = *local.parent.unwrap();
         let glob_return = global.get(&name);
