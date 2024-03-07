@@ -53,6 +53,16 @@ impl Expr {
         }
     }
 
+    pub fn logical(left: Expr, token: Token, right: Expr) -> Self {
+        let src = token.src.clone();
+        let location = left.location.until(right.location);
+        Self {
+            expr_type: ExprType::logical(left, token, right),
+            location,
+            src,
+        }
+    }
+
     pub fn variable(name: String, token: Token) -> Self {
         let src = token.src.clone();
         let location = token.location;
@@ -80,6 +90,9 @@ impl Display for Expr {
             ExprType::Binary(left, token, right) => {
                 write!(f, "({} {} {})", token.token_type, left, right)
             }
+            ExprType::Logical(left, token, right) => {
+                write!(f, "(Logical {} {} {})", token.token_type, left, right)
+            }
             ExprType::Grouping(expr) => write!(f, "(group {})", expr),
             ExprType::Literal(literal) => write!(f, "({})", literal),
             ExprType::Unary(token, expr) => write!(f, "({} {})", token.token_type, expr),
@@ -93,6 +106,7 @@ impl Display for Expr {
 pub enum ExprType {
     Assign(NameExpr, Box<Expr>),
     Binary(Box<Expr>, Token, Box<Expr>),
+    Logical(Box<Expr>, Token, Box<Expr>),
     Grouping(Box<Expr>),
     Literal(Literal),
     Unary(Token, Box<Expr>),
@@ -123,6 +137,10 @@ impl Display for Name {
 impl ExprType {
     pub fn binary(left: Expr, token: Token, right: Expr) -> ExprType {
         Self::Binary(Box::new(left), token, Box::new(right))
+    }
+
+    pub fn logical(left: Expr, token: Token, right: Expr) -> ExprType {
+        Self::Logical(Box::new(left), token, Box::new(right))
     }
 
     pub fn grouping(expr: Expr) -> ExprType {
