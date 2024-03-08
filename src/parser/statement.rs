@@ -10,7 +10,7 @@ use crate::source_span_extensions::SourceSpanExtensions;
 
 use super::parser_error::ParserError::{self, *};
 
-use super::macros::{consume, match_token};
+use super::macros::{check, consume, match_token};
 use super::{Parser, Result};
 
 struct InternalBlock {
@@ -166,7 +166,7 @@ impl Parser {
             _ => Some(self.expression_statement()?),
         };
 
-        let condition = if !matches!(self.peek().token_type, Semicolon) {
+        let condition = if !check!(self, Semicolon) {
             self.expression()?
         } else {
             Expr {
@@ -178,7 +178,7 @@ impl Parser {
 
         consume!(self, Semicolon, |t| self.expected_semicolon(t));
 
-        let increment = if !matches!(self.peek().token_type, RightParen) {
+        let increment = if !check!(self, RightParen) {
             Some(self.expression()?)
         } else {
             None
@@ -223,7 +223,7 @@ impl Parser {
     fn block(&mut self) -> Result<InternalBlock> {
         let left_brace_location = self.advance().location;
         let mut stmts = vec![];
-        while !matches!(self.peek().token_type, TokenType::RightBrace) && !self.is_at_end() {
+        while !check!(self, TokenType::RightBrace) && !self.is_at_end() {
             stmts.push(self.declaration()?);
         }
 

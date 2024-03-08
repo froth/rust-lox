@@ -69,6 +69,14 @@ pub enum ParserError {
         #[label("not a valid target")]
         location: SourceSpan,
     },
+
+    #[error("Too many arguments (max 255)")]
+    TooManyArguments {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("this one is one too many")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]

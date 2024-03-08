@@ -21,6 +21,7 @@ impl Interpreter {
             Unary(token, expr) => self.interpret_unary(token, expr),
             Variable(name) => self.read_variable(name, expr),
             Assign(name, expr) => self.assign_variable(name, expr),
+            Call(callee, arguments) => todo!(),
         }
     }
 
