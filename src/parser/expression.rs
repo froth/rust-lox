@@ -2,7 +2,8 @@ use crate::ast::expr::Literal::{self};
 use crate::ast::expr::{Expr, NameExpr};
 use crate::ast::token::Token;
 use crate::ast::{expr::ExprType, token::TokenType};
-use crate::parser::macros::consume;
+use crate::parser::macros::{check, consume};
+use crate::parser::parser_error::ParserError;
 use crate::source_span_extensions::SourceSpanExtensions;
 
 use super::parser_error::ParserError::*;
@@ -103,8 +104,50 @@ impl Parser {
         if let Some(token) = match_token!(self, Bang | Minus).cloned() {
             Ok(Expr::unary(token, self.unary()?))
         } else {
-            self.primary()
+            self.call()
         }
+    }
+
+    fn call(&mut self) -> Result<Expr> {
+        use TokenType::*;
+        let mut expr = self.primary()?;
+        while match_token!(self, LeftParen).is_some() {
+            expr = self.finish_call(expr)?;
+        }
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr> {
+        use TokenType::*;
+        let callee_location = callee.location;
+        let mut arguments = vec![];
+        if !check!(self, RightParen) {
+            loop {
+                if arguments.len() >= 255 {
+                    self.errors.push(ParserError::TooManyArguments {
+                        src: self.peek().src.clone(),
+                        location: self.peek().location,
+                    })
+                }
+                arguments.push(self.expression()?);
+                if match_token!(self, Comma).is_none() {
+                    break;
+                }
+            }
+        }
+
+        let right_paran = consume!(self, RightParen, |t: &Token| {
+            ExpectedRightParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        Ok(Expr::call(
+            callee,
+            arguments,
+            callee_location.until(right_paran.location),
+        ))
     }
 
     fn primary(&mut self) -> Result<Expr> {
@@ -304,5 +347,37 @@ mod tests {
                 location: _,
             }
         )
+    }
+    #[test]
+    fn parse_multi_argument_lists() {
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::LeftParen),
+            token(TokenType::True),
+            token(TokenType::RightParen),
+            token(TokenType::LeftParen),
+            token(TokenType::True),
+            token(TokenType::RightParen),
+            token(TokenType::Eof),
+        ];
+        let expr = parse_expr(tokens).unwrap();
+        assert_eq!(
+            expr.to_string().trim_end(),
+            "(Call (Call (variable name)=>((true), ))=>((true), ))"
+        )
+    }
+
+    #[test]
+    fn parse_empty_argument_list() {
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::LeftParen),
+            token(TokenType::RightParen),
+            token(TokenType::Eof),
+        ];
+        let expr = parse_expr(tokens).unwrap();
+        assert_eq!(expr.to_string().trim_end(), "(Call (variable name)=>())")
     }
 }

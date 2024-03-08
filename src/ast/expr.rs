@@ -82,22 +82,37 @@ impl Expr {
             src,
         }
     }
+
+    pub fn call(callee: Expr, arguments: Vec<Expr>, location: SourceSpan) -> Self {
+        let src = callee.src.clone();
+        Self {
+            expr_type: ExprType::call(callee, arguments),
+            location,
+            src,
+        }
+    }
 }
 
 impl Display for Expr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use ExprType::*;
         match &self.expr_type {
-            ExprType::Binary(left, token, right) => {
-                write!(f, "({} {} {})", token.token_type, left, right)
-            }
-            ExprType::Logical(left, token, right) => {
+            Binary(left, token, right) => write!(f, "({} {} {})", token.token_type, left, right),
+            Logical(left, token, right) => {
                 write!(f, "(Logical {} {} {})", token.token_type, left, right)
             }
-            ExprType::Grouping(expr) => write!(f, "(group {})", expr),
-            ExprType::Literal(literal) => write!(f, "({})", literal),
-            ExprType::Unary(token, expr) => write!(f, "({} {})", token.token_type, expr),
-            ExprType::Variable(name) => write!(f, "(variable {})", name.0),
-            ExprType::Assign(name, right) => write!(f, "({}={})", name.name, right),
+            Grouping(expr) => write!(f, "(group {})", expr),
+            Literal(literal) => write!(f, "({})", literal),
+            Unary(token, expr) => write!(f, "({} {})", token.token_type, expr),
+            Variable(name) => write!(f, "(variable {})", name.0),
+            Assign(name, right) => write!(f, "({}={})", name.name, right),
+            Call(callee, arguments) => {
+                write!(f, "(Call {}=>(", callee)?;
+                arguments
+                    .iter()
+                    .try_for_each(|arg| write!(f, "{}, ", arg))?;
+                write!(f, "))")
+            }
         }
     }
 }
@@ -111,6 +126,7 @@ pub enum ExprType {
     Literal(Literal),
     Unary(Token, Box<Expr>),
     Variable(Name),
+    Call(Box<Expr>, Vec<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -161,6 +177,10 @@ impl ExprType {
 
     pub fn assign(name: NameExpr, expr: Expr) -> ExprType {
         Self::Assign(name, Box::new(expr))
+    }
+
+    pub fn call(callee: Expr, arguments: Vec<Expr>) -> ExprType {
+        Self::Call(callee.into(), arguments)
     }
 }
 

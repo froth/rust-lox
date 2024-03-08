@@ -19,5 +19,12 @@ macro_rules! consume {
     }};
 }
 
+macro_rules! check {
+    ($self:ident, $pattern:pat $(if $guard:expr)?) => {
+        matches!($self.peek().token_type, $pattern $(if $guard)?)
+    };
+}
+
+pub(super) use check;
 pub(super) use consume;
 pub(super) use match_token;
