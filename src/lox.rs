@@ -1,13 +1,11 @@
 use miette::NamedSource;
 
 use crate::{
-    interpreter::Interpreter,
+    interpreter::{value::Value, Interpreter},
     parser::{parser_error::ParserError::ExpectedSemicolon, Parser},
     scanning::Scanner,
-    value::Value,
 };
 
-#[derive(Default)]
 pub struct Lox {
     interpreter: Interpreter,
     verbose: bool,
@@ -16,7 +14,7 @@ pub struct Lox {
 impl Lox {
     pub fn new(verbose: bool) -> Self {
         Self {
-            interpreter: Interpreter::default(),
+            interpreter: Interpreter::new(),
             verbose,
         }
     }
@@ -69,7 +67,7 @@ mod lox_tests {
     impl Lox {
         pub fn with_printer(printer: Box<dyn Printer>) -> Self {
             Self {
-                interpreter: Interpreter::new(printer),
+                interpreter: Interpreter::from_printer(printer),
                 verbose: false,
             }
         }

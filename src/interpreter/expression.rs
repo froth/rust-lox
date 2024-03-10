@@ -1,13 +1,11 @@
-use crate::{
-    ast::{
-        expr::{Expr, ExprType, Name, NameExpr},
-        token::{Token, TokenType},
-    },
-    types::Type,
-    value::Value,
+use crate::ast::{
+    expr::{Expr, ExprType, Name, NameExpr},
+    token::{Token, TokenType},
 };
 
-use super::{literal::LiteralInterpreter, runtime_error::RuntimeError::*};
+use super::{
+    literal::LiteralInterpreter, runtime_error::RuntimeError::*, types::Type, value::Value,
+};
 use super::{Interpreter, Result};
 
 impl Interpreter {
@@ -21,7 +19,7 @@ impl Interpreter {
             Unary(token, expr) => self.interpret_unary(token, expr),
             Variable(name) => self.read_variable(name, expr),
             Assign(name, expr) => self.assign_variable(name, expr),
-            Call(callee, arguments) => todo!(),
+            Call(callee, arguments) => self.call(callee, arguments),
         }
     }
 
@@ -47,12 +45,29 @@ impl Interpreter {
         }
     }
 
+    fn call(&mut self, callee: &Expr, arguments: &[Expr]) -> Result<Value> {
+        let callee_value = self.interpret_expr(callee)?;
+        if let Value::Callable(callable) = callee_value {
+            let args: Vec<Value> = arguments
+                .iter()
+                .map(|a| self.interpret_expr(a))
+                .collect::<Result<_>>()?;
+            callable.call(self, args)
+        } else {
+            Err(CallingNonCallable {
+                actual: callee_value.into(),
+                src: callee.src.clone(),
+                location: callee.location,
+            })
+        }
+    }
+
     fn handle_numbers(
         &mut self,
         left: &Expr,
         token: &Token,
         right: &Expr,
-        f: fn(f32, f32) -> Value,
+        f: fn(f64, f64) -> Value,
     ) -> Result<Value> {
         let left_value = self.interpret_expr(left);
         let right_value = self.interpret_expr(right);
@@ -185,30 +200,28 @@ mod value_interpreter_tests {
         },
         interpreter::{
             environment::Environment, printer::vec_printer::VecPrinter,
-            runtime_error::RuntimeError::*, Interpreter,
+            runtime_error::RuntimeError::*, types::Type, value::Value, Interpreter,
         },
-        types::Type,
-        value::Value,
     };
 
     #[test]
     fn string_literal() {
         let expr = literal(Literal::String("Test".to_string()));
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::String(string) if string == "Test");
     }
     #[test]
     fn minus_one() {
         let expr = literal(1.0.into());
         let expr = Expr::unary(token(TokenType::Minus), expr);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Number(number) if number == -1.0);
     }
     #[test]
     fn bang_one() {
         let expr = literal(1.0.into());
         let expr = Expr::unary(token(TokenType::Bang), expr);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap(),
             Value::Boolean(false)
@@ -218,7 +231,7 @@ mod value_interpreter_tests {
     fn bang_false() {
         let expr = literal(Literal::Boolean(false));
         let expr = Expr::unary(token(TokenType::Bang), expr);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap(),
             Value::Boolean(true)
@@ -228,7 +241,7 @@ mod value_interpreter_tests {
     fn bang_nil() {
         let expr = literal(Literal::Nil);
         let expr = Expr::unary(token(TokenType::Bang), expr);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap(),
             Value::Boolean(true)
@@ -239,7 +252,7 @@ mod value_interpreter_tests {
         let one = literal(1.0.into());
         let five = literal(5.0.into());
         let expr = Expr::binary(five, token(TokenType::Minus), one);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Number(number) if float_eq!(number, 4.0, ulps_all <= 4));
     }
     #[test]
@@ -248,7 +261,7 @@ mod value_interpreter_tests {
         let right = literal("sdfsdf".into());
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap_err(),
             WrongType {
@@ -265,7 +278,7 @@ mod value_interpreter_tests {
         let right = literal("sdfsdf".into());
         let operator = token(TokenType::EqualEqual);
         let expr = Expr::binary(left, operator, right);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap(),
             Value::Boolean(false)
@@ -277,7 +290,7 @@ mod value_interpreter_tests {
         let right = literal(1.0.into());
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap_err(),
             WrongType {
@@ -294,7 +307,7 @@ mod value_interpreter_tests {
         let right = literal(Literal::Nil);
         let operator = token(TokenType::Minus);
         let expr = Expr::binary(left, operator, right);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap_err(),
             WrongTypes {
@@ -312,7 +325,7 @@ mod value_interpreter_tests {
         let right = literal("are good".into());
         let operator = token(TokenType::Plus);
         let expr = Expr::binary(left, operator, right);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::String(string) if  string == "dogs are good");
     }
     #[test]
@@ -320,7 +333,7 @@ mod value_interpreter_tests {
         let one = literal(1.0.into());
         let five = literal(5.0.into());
         let expr = Expr::binary(five, token(TokenType::Plus), one);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(under_test.interpret_expr(&expr).unwrap(), Value::Number(number) if float_eq!(number, 6.0, ulps_all <= 4));
     }
     #[test]
@@ -329,7 +342,7 @@ mod value_interpreter_tests {
         let right = literal(1.0.into());
         let operator = token(TokenType::Plus);
         let expr = Expr::binary(left, operator, right);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap_err(),
             PlusOperatorWrongTypes {
@@ -344,7 +357,7 @@ mod value_interpreter_tests {
     fn assign_unassigned_var() {
         let right = literal(1.0.into());
         let expr = Expr::assign(name_expr("a".into()), right);
-        let mut under_test = Interpreter::new(Box::new(VecPrinter::new()));
+        let mut under_test = Interpreter::from_printer(Box::new(VecPrinter::new()));
         assert_matches!(
             under_test.interpret_expr(&expr).unwrap_err(),
             UndefinedVariable { .. }

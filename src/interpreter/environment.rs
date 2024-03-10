@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use crate::{ast::expr::Name, value::Value};
+use crate::ast::expr::Name;
+
+use super::{builtins::builtins, value::Value};
 
 #[derive(Default)]
 pub struct Environment {
@@ -9,6 +11,14 @@ pub struct Environment {
 }
 
 impl Environment {
+    pub fn with_native_functions() -> Self {
+        let mut env = Environment::default();
+        builtins()
+            .into_iter()
+            .for_each(|(k, v)| env.define(&k, Value::Callable(v)));
+        env
+    }
+
     pub fn define(&mut self, key: &Name, value: Value) {
         self.values.insert(key.clone(), value);
     }
@@ -41,7 +51,10 @@ impl Environment {
 mod environment_tests {
     use std::collections::HashMap;
 
-    use crate::{ast::expr::Name, interpreter::environment::Environment, value::Value};
+    use crate::{
+        ast::expr::Name,
+        interpreter::{environment::Environment, value::Value},
+    };
 
     pub fn local(parent: Environment) -> Environment {
         Environment {
