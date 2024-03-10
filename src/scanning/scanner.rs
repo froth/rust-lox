@@ -215,7 +215,7 @@ impl Scanner {
             }
         }
         let result = self.source[self.start..self.current]
-            .parse::<f32>()
+            .parse::<f64>()
             .map(|f| Some(TokenType::Number(f)))?;
         Ok(result)
     }

@@ -1,5 +1,5 @@
-use super::Result;
-use crate::{ast::expr::Literal, value::Value};
+use super::{value::Value, Result};
+use crate::ast::expr::Literal;
 pub(super) trait LiteralInterpreter {
     fn interpret(&self) -> Result<Value>;
 }

@@ -1,7 +1,8 @@
-use crate::value::Value;
+use super::value::Value;
 
 #[derive(Debug, strum::Display)]
 pub enum Type {
+    Callable,
     String,
     Number,
     Boolean,
@@ -11,6 +12,7 @@ pub enum Type {
 impl From<Value> for Type {
     fn from(value: Value) -> Self {
         match value {
+            Value::Callable(_) => Type::Callable,
             Value::String(_) => Type::String,
             Value::Number(_) => Type::Number,
             Value::Boolean(_) => Type::Boolean,

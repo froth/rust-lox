@@ -1,4 +1,4 @@
-use crate::value::Value;
+use super::value::Value;
 
 pub trait Printer {
     fn print(&self, value: Value);
@@ -11,17 +11,11 @@ impl Printer for ConsolePrinter {
     }
 }
 
-impl Default for Box<dyn Printer> {
-    fn default() -> Self {
-        Box::new(ConsolePrinter)
-    }
-}
-
 #[cfg(test)]
 pub mod vec_printer {
     use std::{cell::RefCell, ops::Add, rc::Rc};
 
-    use crate::value::Value;
+    use crate::interpreter::value::Value;
 
     use super::Printer;
 

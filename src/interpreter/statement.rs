@@ -1,12 +1,9 @@
-use crate::{
-    ast::{
-        expr::{Expr, Name},
-        stmt::{Stmt, StmtType::*},
-    },
-    value::Value,
+use crate::ast::{
+    expr::{Expr, Name},
+    stmt::{Stmt, StmtType::*},
 };
 
-use super::{Interpreter, Result};
+use super::{value::Value, Interpreter, Result};
 
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> Result<()> {
@@ -79,7 +76,7 @@ mod stmt_interpreter_tests {
             literal(Literal::String("string".to_string())),
             (0, 1).into(),
         );
-        let mut interpreter = Interpreter::new(Box::new(printer.clone()));
+        let mut interpreter = Interpreter::from_printer(Box::new(printer.clone()));
         interpreter.interpret_stmt(&stmt).unwrap();
         assert_eq!(printer.get_lines(), vec!["string".into()])
     }
@@ -88,7 +85,7 @@ mod stmt_interpreter_tests {
     fn restore_env() {
         let printer = VecPrinter::new();
         let stmt = block(vec![var("a")]);
-        let mut interpreter = Interpreter::new(Box::new(printer.clone()));
+        let mut interpreter = Interpreter::from_printer(Box::new(printer.clone()));
         interpreter.interpret_stmt(&stmt).unwrap();
         let stmt = Stmt::expr(
             Expr::variable("a".to_string(), token(TokenType::Eof)),
@@ -106,7 +103,7 @@ mod stmt_interpreter_tests {
             (0, 1).into(),
         );
         let stmt = block(vec![var("a"), read_undefined_var]);
-        let mut interpreter = Interpreter::new(Box::new(printer.clone()));
+        let mut interpreter = Interpreter::from_printer(Box::new(printer.clone()));
         let _ = interpreter.interpret_stmt(&stmt).unwrap_err();
         let stmt = Stmt::expr(
             Expr::variable("a".to_string(), token(TokenType::Eof)),

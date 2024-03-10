@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
-use crate::{ast::expr::Name, types::Type};
+use crate::{ast::expr::Name, interpreter::types::Type};
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
 pub enum RuntimeError {
@@ -56,6 +56,15 @@ pub enum RuntimeError {
         #[source_code]
         src: Arc<NamedSource<String>>,
         #[label("here")]
+        location: SourceSpan,
+    },
+
+    #[error("Can only call functions and classes but got {actual}")]
+    CallingNonCallable {
+        actual: Type,
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("not callable {actual}, change to class of function")]
         location: SourceSpan,
     },
 }

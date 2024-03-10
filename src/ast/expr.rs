@@ -187,7 +187,7 @@ impl ExprType {
 #[derive(Debug, Clone)]
 pub enum Literal {
     String(String),
-    Number(f32),
+    Number(f64),
     Boolean(bool),
     Nil,
 }
@@ -209,6 +209,12 @@ impl From<bool> for Literal {
 
 impl From<f32> for Literal {
     fn from(value: f32) -> Self {
+        Literal::Number(value.into())
+    }
+}
+
+impl From<f64> for Literal {
+    fn from(value: f64) -> Self {
         Literal::Number(value)
     }
 }

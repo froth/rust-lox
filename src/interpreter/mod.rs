@@ -1,24 +1,38 @@
+mod builtins;
+mod callable;
 mod environment;
 mod expression;
 mod literal;
 pub mod printer;
 pub mod runtime_error;
 mod statement;
+mod types;
+pub mod value;
 
 use std::mem;
 
 use crate::ast::stmt::Stmt;
 
-use self::{environment::Environment, printer::Printer, runtime_error::RuntimeError};
+use self::{
+    environment::Environment,
+    printer::{ConsolePrinter, Printer},
+    runtime_error::RuntimeError,
+};
 
 type Result<T> = std::result::Result<T, RuntimeError>;
-#[derive(Default)]
 pub struct Interpreter {
     printer: Box<dyn Printer>,
     environment: Environment,
 }
 
 impl Interpreter {
+    pub fn new() -> Self {
+        Self {
+            printer: Box::new(ConsolePrinter),
+            environment: Environment::with_native_functions(),
+        }
+    }
+
     pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
         statements.iter().try_for_each(|s| self.interpret_stmt(s))
     }
@@ -36,7 +50,7 @@ impl Interpreter {
     }
 
     #[cfg(test)]
-    pub fn new(printer: Box<dyn Printer>) -> Self {
+    pub fn from_printer(printer: Box<dyn Printer>) -> Self {
         Self {
             printer,
             environment: Environment::default(),

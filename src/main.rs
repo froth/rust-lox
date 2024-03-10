@@ -17,8 +17,6 @@ mod lox;
 mod parser;
 mod scanning;
 mod source_span_extensions;
-mod types;
-mod value;
 
 fn main() {
     let args = Args::parse();
