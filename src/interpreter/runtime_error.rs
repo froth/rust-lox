@@ -67,4 +67,14 @@ pub enum RuntimeError {
         #[label("not callable {actual}, change to class of function")]
         location: SourceSpan,
     },
+
+    #[error("Expected {expected} arguments but got {actual}")]
+    WrongArity {
+        expected: usize,
+        actual: usize,
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
 }

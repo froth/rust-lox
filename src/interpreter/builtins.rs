@@ -5,7 +5,13 @@ use crate::ast::expr::Name;
 use super::{callable::Callable, value::Value, Interpreter, Result};
 pub fn builtins() -> HashMap<Name, Callable> {
     let mut builtins = HashMap::new();
-    builtins.insert("clock".into(), Callable::Builtin(clock));
+    builtins.insert(
+        "clock".into(),
+        Callable::Builtin {
+            function: clock,
+            arity: 0,
+        },
+    );
     builtins
 }
 

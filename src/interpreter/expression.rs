@@ -1,3 +1,5 @@
+use miette::SourceSpan;
+
 use crate::ast::{
     expr::{Expr, ExprType, Name, NameExpr},
     token::{Token, TokenType},
@@ -19,7 +21,7 @@ impl Interpreter {
             Unary(token, expr) => self.interpret_unary(token, expr),
             Variable(name) => self.read_variable(name, expr),
             Assign(name, expr) => self.assign_variable(name, expr),
-            Call(callee, arguments) => self.call(callee, arguments),
+            Call(callee, arguments) => self.call(callee, arguments, expr.location),
         }
     }
 
@@ -45,14 +47,23 @@ impl Interpreter {
         }
     }
 
-    fn call(&mut self, callee: &Expr, arguments: &[Expr]) -> Result<Value> {
+    fn call(&mut self, callee: &Expr, arguments: &[Expr], location: SourceSpan) -> Result<Value> {
         let callee_value = self.interpret_expr(callee)?;
         if let Value::Callable(callable) = callee_value {
-            let args: Vec<Value> = arguments
-                .iter()
-                .map(|a| self.interpret_expr(a))
-                .collect::<Result<_>>()?;
-            callable.call(self, args)
+            if arguments.len() != callable.arity() {
+                Err(WrongArity {
+                    expected: callable.arity(),
+                    actual: arguments.len(),
+                    src: callee.src.clone(),
+                    location,
+                })
+            } else {
+                let args: Vec<Value> = arguments
+                    .iter()
+                    .map(|a| self.interpret_expr(a))
+                    .collect::<Result<_>>()?;
+                callable.call(self, args)
+            }
         } else {
             Err(CallingNonCallable {
                 actual: callee_value.into(),
