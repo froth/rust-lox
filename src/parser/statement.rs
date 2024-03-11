@@ -174,10 +174,14 @@ impl Parser {
 
     fn expression_statement(&mut self) -> Result<Stmt> {
         let expr = self.expression()?;
-        let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| ExpectedSemicolon {
-            expr: Some(expr),
-            src: t.src.clone(),
-            location: self.previous_if_eof(t.location),
+        let semicolon = consume!(self, TokenType::Semicolon, |t: &Token| {
+            // only recover from expression if it is the top level expression
+            let expr = (expr.location.offset() == self.tokens[0].location.offset()).then_some(expr);
+            ExpectedSemicolon {
+                expr,
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
         });
         let location = expr.location.until(semicolon.location);
         Ok(Stmt::expr(expr, location))

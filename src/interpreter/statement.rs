@@ -3,7 +3,7 @@ use crate::ast::{
     stmt::{Stmt, StmtType::*},
 };
 
-use super::{value::Value, Interpreter, Result};
+use super::{callable::Callable, value::Value, Interpreter, Result};
 
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> Result<()> {
@@ -25,9 +25,9 @@ impl Interpreter {
             While { condition, body } => self.execute_while(condition, body.as_ref()),
             Function {
                 name,
-                arguments,
+                parameters: arguments,
                 body,
-            } => todo!(),
+            } => self.define_function(name, arguments, body),
         }
     }
 
@@ -36,6 +36,16 @@ impl Interpreter {
             .as_ref()
             .map_or(Ok(Value::Nil), |expr| self.interpret_expr(expr))?;
         self.environment.define(key, initializer);
+        Ok(())
+    }
+
+    fn define_function(&mut self, name: &Name, arguments: &[Name], body: &[Stmt]) -> Result<()> {
+        let function = Callable::Function {
+            name: name.clone(),
+            parameters: arguments.to_vec(),
+            body: body.to_vec(),
+        };
+        self.environment.define(name, Value::Callable(function));
         Ok(())
     }
 

@@ -1,0 +1,20 @@
+interpret
+fun rec(a) {
+    print a;
+    if(a>0) {
+        rec(a-1);
+    }
+}
+rec(10);
+----
+10
+9
+8
+7
+6
+5
+4
+3
+2
+1
+0

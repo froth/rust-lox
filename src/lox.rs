@@ -22,7 +22,7 @@ impl Lox {
     pub fn run(&mut self, source: String, named_source: NamedSource<String>) -> miette::Result<()> {
         let tokens = Scanner::scan(source, named_source, self.verbose)?;
         let statements = Parser::parse(tokens, self.verbose)?;
-        self.interpreter.interpret(statements)?;
+        self.interpreter.interpret(&statements)?;
         Ok(())
     }
 
@@ -31,7 +31,7 @@ impl Lox {
         let tokens = Scanner::scan(source, named_source, self.verbose)?;
         match Parser::parse(tokens, self.verbose) {
             Ok(statements) => {
-                self.interpreter.interpret(statements)?;
+                self.interpreter.interpret(&statements)?;
                 Ok(None)
             }
             Err(parser_errors) => match &parser_errors.parser_errors[..] {

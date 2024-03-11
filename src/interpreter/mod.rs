@@ -33,7 +33,7 @@ impl Interpreter {
         }
     }
 
-    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<()> {
+    pub fn interpret(&mut self, statements: &[Stmt]) -> Result<()> {
         statements.iter().try_for_each(|s| self.interpret_stmt(s))
     }
 
