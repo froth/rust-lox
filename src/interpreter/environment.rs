@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ast::expr::Name;
 
-use super::{builtins::builtins, value::Value};
+use super::{native_functions::native_functions, value::Value};
 
 #[derive(Default)]
 pub struct Environment {
@@ -13,7 +13,7 @@ pub struct Environment {
 impl Environment {
     pub fn with_native_functions() -> Self {
         let mut env = Environment::default();
-        builtins()
+        native_functions()
             .into_iter()
             .for_each(|(k, v)| env.define(&k, Value::Callable(v)));
         env
