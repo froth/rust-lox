@@ -1,22 +1,35 @@
+use core::fmt::Display;
+
 use super::{value::Value, Interpreter, Result};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {
-    Builtin {
+    Native {
         function: fn(interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value>,
         arity: usize,
+        name: String,
     },
 }
 
 impl Callable {
     pub fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
         match self {
-            Callable::Builtin { function, .. } => function(interpreter, arguments),
+            Callable::Native { function, .. } => function(interpreter, arguments),
         }
     }
 
     pub fn arity(&self) -> usize {
         match self {
-            Callable::Builtin { arity, .. } => *arity,
+            Callable::Native { arity, .. } => *arity,
+        }
+    }
+}
+
+impl Display for Callable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Callable::Native { name, arity, .. } => {
+                write!(f, "<native fn {name} ({arity} arguments)>",)
+            }
         }
     }
 }
