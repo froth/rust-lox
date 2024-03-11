@@ -190,7 +190,7 @@ impl Parser {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
 
     use crate::{
         ast::{
@@ -349,7 +349,7 @@ mod tests {
         )
     }
     #[test]
-    fn parse_multi_argument_lists() {
+    fn parse_multi_argument_lists_function_call() {
         let name: String = "name".into();
         let tokens = vec![
             token(TokenType::Identifier(name.clone())),
@@ -369,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_empty_argument_list() {
+    fn parse_empty_argument_list_function_call() {
         let name: String = "name".into();
         let tokens = vec![
             token(TokenType::Identifier(name.clone())),

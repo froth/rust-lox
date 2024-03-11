@@ -51,10 +51,7 @@ impl Environment {
 mod environment_tests {
     use std::collections::HashMap;
 
-    use crate::{
-        ast::expr::Name,
-        interpreter::{environment::Environment, value::Value},
-    };
+    use crate::interpreter::{environment::Environment, value::Value};
 
     pub fn local(parent: Environment) -> Environment {
         Environment {
@@ -66,7 +63,7 @@ mod environment_tests {
     #[test]
     fn define_get() {
         let mut env = Environment::default();
-        let name = Name::new("x".to_string());
+        let name = "x".into();
         env.define(&name, Value::Boolean(true));
         let returned = env.get(&name);
         assert_eq!(returned, Some(Value::Boolean(true)))
@@ -75,7 +72,7 @@ mod environment_tests {
     #[test]
     fn define_assign_get() {
         let mut env = Environment::default();
-        let name = Name::new("x".to_string());
+        let name = "x".into();
         env.define(&name, Value::Boolean(true));
         let assigned = env.assign(&name, &Value::Boolean(false));
         assert!(assigned);
@@ -86,7 +83,7 @@ mod environment_tests {
     #[test]
     fn assign_unasigned() {
         let mut env = Environment::default();
-        let name = Name::new("x".to_string());
+        let name = "x".into();
         let assigned = env.assign(&name, &Value::Boolean(false));
         assert!(!assigned);
         let returned = env.get(&name);
@@ -96,7 +93,7 @@ mod environment_tests {
     #[test]
     fn define_get_from_parent() {
         let mut global = Environment::default();
-        let name = Name::new("x".to_string());
+        let name = "x".into();
         global.define(&name, Value::Boolean(true));
         let local = local(global);
         let returned = local.get(&name);
@@ -106,7 +103,7 @@ mod environment_tests {
     #[test]
     fn define_assign_to_parent() {
         let mut global = Environment::default();
-        let name = Name::new("x".to_string());
+        let name = "x".into();
         global.define(&name, Value::Nil);
         let mut local = local(global);
         let assigned = local.assign(&name, &Value::Boolean(false));
@@ -119,7 +116,7 @@ mod environment_tests {
     #[test]
     fn shadowing() {
         let mut global = Environment::default();
-        let name = Name::new("x".to_string());
+        let name = "x".into();
         global.define(&name, Value::Nil);
         let mut local = local(global);
         local.define(&name, Value::Boolean(false));

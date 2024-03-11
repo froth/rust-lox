@@ -1,3 +1,4 @@
+mod declaration;
 mod expression;
 mod macros;
 pub mod parser_error;
@@ -7,10 +8,19 @@ use std::sync::Arc;
 
 use miette::{NamedSource, SourceSpan};
 
-use self::parser_error::{ParserError, ParserErrors};
-use crate::ast::{
-    stmt::Stmt,
-    token::{Token, TokenType},
+use self::{
+    macros::{check, consume},
+    parser_error::{
+        ParserError::{self, *},
+        ParserErrors,
+    },
+};
+use crate::{
+    ast::{
+        stmt::Stmt,
+        token::{Token, TokenType},
+    },
+    source_span_extensions::SourceSpanExtensions,
 };
 
 pub type Result<T> = core::result::Result<T, ParserError>;
@@ -19,6 +29,11 @@ pub struct Parser {
     tokens: Vec<Token>,
     errors: Vec<ParserError>,
     current: usize,
+    src: Arc<NamedSource<String>>,
+}
+struct InternalBlock {
+    stmts: Vec<Stmt>,
+    location: SourceSpan,
     src: Arc<NamedSource<String>>,
 }
 
@@ -49,7 +64,7 @@ impl Parser {
     fn do_parse(&mut self) -> core::result::Result<Vec<Stmt>, ParserErrors> {
         let mut statements = vec![];
         while !self.is_at_end() {
-            match self.stmt() {
+            match self.declaration() {
                 Ok(stmt) => statements.push(stmt),
                 Err(err) => {
                     self.synchronize();
@@ -64,6 +79,35 @@ impl Parser {
             Err(ParserErrors {
                 parser_errors: errors,
             })
+        }
+    }
+
+    fn block(&mut self) -> Result<InternalBlock> {
+        let left_brace_location = self.advance().location;
+        let mut stmts = vec![];
+        while !check!(self, TokenType::RightBrace) && !self.is_at_end() {
+            stmts.push(self.declaration()?);
+        }
+
+        let right_brace = consume!(self, TokenType::RightBrace, |t: &Token| {
+            ExpectedRightBrace {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        Ok(InternalBlock {
+            stmts,
+            location: left_brace_location.until(right_brace.location),
+            src: right_brace.src.clone(),
+        })
+    }
+
+    fn expected_semicolon(&self, t: &Token) -> ParserError {
+        ExpectedSemicolon {
+            expr: None,
+            src: t.src.clone(),
+            location: self.previous_if_eof(t.location),
         }
     }
 
@@ -115,7 +159,7 @@ impl Parser {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
 
     use crate::{
         ast::token::TokenType,
