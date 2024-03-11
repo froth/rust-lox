@@ -20,7 +20,7 @@ print (1;
           }
         }
       ],
-      "message": "Expected ';' after expression",
+      "message": "Expected ';'",
       "related": [],
       "severity": "error"
     },

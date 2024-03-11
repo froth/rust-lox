@@ -28,6 +28,7 @@ impl Parser {
         use TokenType::*;
         match self.peek().token_type {
             Var => self.var_declaration(),
+            Fun => self.fun_declaration(),
             _ => self.statement(),
         }
     }
@@ -57,6 +58,86 @@ impl Parser {
                 location: peek.location,
             })
         }
+    }
+
+    fn fun_declaration(&mut self) -> Result<Stmt> {
+        use TokenType::*;
+        let fun_location = self.advance().location;
+        let identifier = self.peek();
+        let src = identifier.src.clone();
+        if let Identifier(name) = &identifier.token_type {
+            let name = name.clone();
+            self.advance();
+
+            let arguments = self.argument_list()?;
+
+            let left_brace = self.peek();
+            if !matches!(left_brace.token_type, LeftBrace) {
+                return Err(ExpectedLeftBrace {
+                    src,
+                    location: left_brace.location,
+                });
+            }
+
+            let body = self.block()?;
+
+            Ok(Stmt::function(
+                name,
+                arguments,
+                body.stmts,
+                fun_location.until(body.location),
+                src,
+            ))
+        } else {
+            Err(ExpectedIdentifier {
+                src: identifier.src.clone(),
+                location: identifier.location,
+            })
+        }
+    }
+
+    fn argument_list(&mut self) -> Result<Vec<String>> {
+        use TokenType::*;
+        consume!(self, LeftParen, |t: &Token| {
+            ExpectedLeftParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+        let mut arguments = vec![];
+        if !check!(self, RightParen) {
+            loop {
+                if arguments.len() >= 255 {
+                    self.errors.push(ParserError::TooManyArguments {
+                        src: self.peek().src.clone(),
+                        location: self.peek().location,
+                    })
+                }
+
+                let identifier = self.peek();
+                let identifier_location = identifier.location;
+                if let Identifier(arg_name) = &identifier.token_type {
+                    arguments.push(arg_name.clone());
+                    self.advance();
+                } else {
+                    return Err(ParserError::ExpectedIdentifier {
+                        src: identifier.src.clone(),
+                        location: identifier_location,
+                    });
+                }
+
+                if match_token!(self, Comma).is_none() {
+                    break;
+                }
+            }
+        }
+        consume!(self, RightParen, |t: &Token| {
+            ExpectedRightParen {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+        Ok(arguments)
     }
 
     fn statement(&mut self) -> Result<Stmt> {
@@ -499,6 +580,33 @@ mod tests {
         assert_eq!(
             stmt.to_string().trim_end(),
             "{\nVar name = (nil)\nwhile (EqualEqual (variable name) (nil)) {\n{\nExpr(nil)\nExpr(name=(true))\n}\n}\n}"
+        )
+    }
+
+    #[test]
+    fn parse_function_with_2_arguments() {
+        let name: String = "name".into();
+        let arg1: String = "a".into();
+        let arg2: String = "b".into();
+
+        let tokens = vec![
+            token(TokenType::Fun),
+            token(TokenType::Identifier(name)),
+            token(TokenType::LeftParen),
+            token(TokenType::Identifier(arg1)),
+            token(TokenType::Comma),
+            token(TokenType::Identifier(arg2)),
+            token(TokenType::RightParen),
+            token(TokenType::LeftBrace),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::RightBrace),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(
+            stmt.to_string().trim_end(),
+            "fun name(a, b, ) {\nExpr(nil)\n}"
         )
     }
 }

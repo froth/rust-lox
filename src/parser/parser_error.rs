@@ -21,6 +21,14 @@ pub enum ParserError {
         location: SourceSpan,
     },
 
+    #[error("Expected {{")]
+    ExpectedLeftBrace {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
+
     #[error("Expected }}")]
     ExpectedRightBrace {
         #[source_code]
@@ -45,7 +53,7 @@ pub enum ParserError {
         location: SourceSpan,
     },
 
-    #[error("Expected ';' after expression")]
+    #[error("Expected ';'")]
     ExpectedSemicolon {
         expr: Option<Expr>, //for interpreting expr in repl without
         #[source_code]

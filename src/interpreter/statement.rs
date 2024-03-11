@@ -12,10 +12,22 @@ impl Interpreter {
             Print(expr) => self
                 .interpret_expr(expr)
                 .map(|value| self.printer.print(value)),
-            Var(key, initializer) => self.define_var(key, initializer),
+            Var {
+                name: key,
+                initializer,
+            } => self.define_var(key, initializer),
             Block(stmts) => self.execute_block(stmts),
-            If(condition, then_stmt, else_stmt) => self.execute_if(condition, then_stmt, else_stmt),
-            While(condition, body) => self.execute_while(condition, body.as_ref()),
+            If {
+                condition,
+                then_stmt,
+                else_stmt,
+            } => self.execute_if(condition, then_stmt, else_stmt),
+            While { condition, body } => self.execute_while(condition, body.as_ref()),
+            Function {
+                name,
+                arguments,
+                body,
+            } => todo!(),
         }
     }
 
@@ -136,7 +148,10 @@ mod stmt_interpreter_tests {
 
     fn var(name: &str) -> Stmt {
         Stmt {
-            stmt_type: StmtType::Var(name.into(), None),
+            stmt_type: StmtType::Var {
+                name: name.into(),
+                initializer: None,
+            },
             location: (0, 1).into(),
             src: NamedSource::new("name", String::new()).into(),
         }
