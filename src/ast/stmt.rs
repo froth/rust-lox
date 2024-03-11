@@ -4,7 +4,7 @@ use miette::{NamedSource, SourceSpan};
 
 use super::expr::{Expr, Name};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Stmt {
     pub stmt_type: StmtType,
     pub location: SourceSpan,
@@ -13,7 +13,7 @@ pub struct Stmt {
 
 impl Stmt {
     pub fn expr(expr: Expr, location: SourceSpan) -> Self {
-        let src = expr.src.clone();
+        let src: Arc<NamedSource<String>> = expr.src.clone();
         Stmt {
             stmt_type: StmtType::Expression(expr),
             location,
@@ -47,7 +47,7 @@ impl Stmt {
 
     pub fn function(
         name: String,
-        arguments: Vec<String>,
+        parameters: Vec<String>,
         body: Vec<Stmt>,
         location: SourceSpan,
         src: Arc<NamedSource<String>>,
@@ -55,7 +55,7 @@ impl Stmt {
         Stmt {
             stmt_type: StmtType::Function {
                 name: name.into(),
-                arguments: arguments.into_iter().map(|arg| arg.into()).collect(),
+                parameters: parameters.into_iter().map(|arg| arg.into()).collect(),
                 body,
             },
             src,
@@ -94,7 +94,7 @@ impl Stmt {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum StmtType {
     Expression(Expr),
     Print(Expr),
@@ -104,7 +104,7 @@ pub enum StmtType {
     },
     Function {
         name: Name,
-        arguments: Vec<Name>,
+        parameters: Vec<Name>,
         body: Vec<Stmt>,
     },
     Block(Vec<Stmt>),
@@ -165,7 +165,7 @@ impl Display for Stmt {
             }
             Function {
                 name,
-                arguments,
+                parameters: arguments,
                 body,
             } => {
                 write!(f, "fun {name}(")?;

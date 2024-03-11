@@ -85,6 +85,14 @@ pub enum ParserError {
         #[label("this one is one too many")]
         location: SourceSpan,
     },
+
+    #[error("Too many parameters (max 255)")]
+    TooManyParameters {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("this one is one too many")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]

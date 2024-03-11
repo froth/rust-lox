@@ -53,7 +53,7 @@ impl Parser {
             let name = name.clone();
             self.advance();
 
-            let arguments = self.argument_list()?;
+            let parameters = self.parameter_list()?;
 
             let left_brace = self.peek();
             if !matches!(left_brace.token_type, LeftBrace) {
@@ -67,7 +67,7 @@ impl Parser {
 
             Ok(Stmt::function(
                 name,
-                arguments,
+                parameters,
                 body.stmts,
                 fun_location.until(body.location),
                 self.src.clone(),
@@ -80,7 +80,7 @@ impl Parser {
         }
     }
 
-    fn argument_list(&mut self) -> Result<Vec<String>> {
+    fn parameter_list(&mut self) -> Result<Vec<String>> {
         use TokenType::*;
         consume!(self, LeftParen, |t: &Token| {
             ExpectedLeftParen {
@@ -88,11 +88,11 @@ impl Parser {
                 location: self.previous_if_eof(t.location),
             }
         });
-        let mut arguments = vec![];
+        let mut parameters = vec![];
         if !check!(self, RightParen) {
             loop {
-                if arguments.len() >= 255 {
-                    self.errors.push(ParserError::TooManyArguments {
+                if parameters.len() >= 255 {
+                    self.errors.push(ParserError::TooManyParameters {
                         src: self.peek().src.clone(),
                         location: self.peek().location,
                     })
@@ -101,7 +101,7 @@ impl Parser {
                 let identifier = self.peek();
                 let identifier_location = identifier.location;
                 if let Identifier(arg_name) = &identifier.token_type {
-                    arguments.push(arg_name.clone());
+                    parameters.push(arg_name.clone());
                     self.advance();
                 } else {
                     return Err(ParserError::ExpectedIdentifier {
@@ -121,7 +121,7 @@ impl Parser {
                 location: self.previous_if_eof(t.location),
             }
         });
-        Ok(arguments)
+        Ok(parameters)
     }
 }
 
