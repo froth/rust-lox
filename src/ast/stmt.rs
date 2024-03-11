@@ -36,7 +36,28 @@ impl Stmt {
         src: Arc<NamedSource<String>>,
     ) -> Self {
         Stmt {
-            stmt_type: StmtType::Var(Name::new(name), expr),
+            stmt_type: StmtType::Var {
+                name: name.into(),
+                initializer: expr,
+            },
+            src,
+            location,
+        }
+    }
+
+    pub fn function(
+        name: String,
+        arguments: Vec<String>,
+        body: Vec<Stmt>,
+        location: SourceSpan,
+        src: Arc<NamedSource<String>>,
+    ) -> Self {
+        Stmt {
+            stmt_type: StmtType::Function {
+                name: name.into(),
+                arguments: arguments.into_iter().map(|arg| arg.into()).collect(),
+                body,
+            },
             src,
             location,
         }
@@ -50,7 +71,11 @@ impl Stmt {
     ) -> Self {
         let src = condition.src.clone();
         Stmt {
-            stmt_type: StmtType::If(condition, then_stmt.into(), else_stmt.map(Box::new)),
+            stmt_type: StmtType::If {
+                condition,
+                then_stmt: then_stmt.into(),
+                else_stmt: else_stmt.map(Box::new),
+            },
             src,
             location,
         }
@@ -59,7 +84,10 @@ impl Stmt {
     pub fn while_stmt(condition: Expr, body: Stmt, location: SourceSpan) -> Self {
         let src = condition.src.clone();
         Stmt {
-            stmt_type: StmtType::While(condition, body.into()),
+            stmt_type: StmtType::While {
+                condition,
+                body: body.into(),
+            },
             src,
             location,
         }
@@ -70,10 +98,25 @@ impl Stmt {
 pub enum StmtType {
     Expression(Expr),
     Print(Expr),
-    Var(Name, Option<Expr>),
+    Var {
+        name: Name,
+        initializer: Option<Expr>,
+    },
+    Function {
+        name: Name,
+        arguments: Vec<Name>,
+        body: Vec<Stmt>,
+    },
     Block(Vec<Stmt>),
-    If(Expr, Box<Stmt>, Option<Box<Stmt>>),
-    While(Expr, Box<Stmt>),
+    If {
+        condition: Expr,
+        then_stmt: Box<Stmt>,
+        else_stmt: Option<Box<Stmt>>,
+    },
+    While {
+        condition: Expr,
+        body: Box<Stmt>,
+    },
 }
 
 impl Display for Stmt {
@@ -82,28 +125,53 @@ impl Display for Stmt {
         match &self.stmt_type {
             Expression(expr) => writeln!(f, "Expr{}", expr),
             Print(expr) => writeln!(f, "Print{}", expr),
-            Var(name, Some(expr)) => writeln!(f, "Var {} = {}", name, expr),
-            Var(name, None) => writeln!(f, "Var {}", name),
+            Var {
+                name,
+                initializer: Some(expr),
+            } => writeln!(f, "Var {} = {}", name, expr),
+            Var {
+                name,
+                initializer: None,
+            } => writeln!(f, "Var {}", name),
             Block(stmts) => {
                 writeln!(f, "{{")?;
                 stmts.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
             }
-            If(condition, then_branch, Some(else_branch)) => {
+            If {
+                condition,
+                then_stmt: then_branch,
+                else_stmt: Some(else_branch),
+            } => {
                 writeln!(f, "if {}", condition)?;
                 write!(f, "{}", then_branch)?;
                 writeln!(f, "else")?;
                 write!(f, "{}", else_branch)?;
                 writeln!(f, "endif")
             }
-            If(condition, then_branch, None) => {
+            If {
+                condition,
+                then_stmt: then_branch,
+                else_stmt: None,
+            } => {
                 writeln!(f, "if {}", condition)?;
                 write!(f, "{}", then_branch)?;
                 writeln!(f, "endif")
             }
-            While(condition, body) => {
+            While { condition, body } => {
                 writeln!(f, "while {} {{", condition)?;
                 write!(f, "{}", body)?;
+                writeln!(f, "}}")
+            }
+            Function {
+                name,
+                arguments,
+                body,
+            } => {
+                write!(f, "fun {name}(")?;
+                arguments.iter().try_for_each(|arg| write!(f, "{arg}, "))?;
+                writeln!(f, ") {{")?;
+                body.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
             }
         }

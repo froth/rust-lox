@@ -138,6 +138,12 @@ impl From<&str> for Name {
     }
 }
 
+impl From<String> for Name {
+    fn from(value: String) -> Self {
+        Name(value)
+    }
+}
+
 impl Name {
     pub fn new(s: String) -> Self {
         Name(s)
