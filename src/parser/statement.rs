@@ -37,7 +37,6 @@ impl Parser {
         use TokenType::*;
         let var_location = self.advance().location;
         let peek = self.peek();
-        let src = peek.src.clone();
         if let Identifier(name) = &peek.token_type {
             let name = name.clone();
             self.advance();
@@ -50,11 +49,11 @@ impl Parser {
                 name,
                 expr,
                 var_location.until(semicolon.location),
-                src,
+                self.src.clone(),
             ))
         } else {
             Err(ExpectedIdentifier {
-                src: peek.src.clone(),
+                src: self.src.clone(),
                 location: peek.location,
             })
         }
@@ -64,7 +63,6 @@ impl Parser {
         use TokenType::*;
         let fun_location = self.advance().location;
         let identifier = self.peek();
-        let src = identifier.src.clone();
         if let Identifier(name) = &identifier.token_type {
             let name = name.clone();
             self.advance();
@@ -74,7 +72,7 @@ impl Parser {
             let left_brace = self.peek();
             if !matches!(left_brace.token_type, LeftBrace) {
                 return Err(ExpectedLeftBrace {
-                    src,
+                    src: self.src.clone(),
                     location: left_brace.location,
                 });
             }
@@ -86,11 +84,11 @@ impl Parser {
                 arguments,
                 body.stmts,
                 fun_location.until(body.location),
-                src,
+                self.src.clone(),
             ))
         } else {
             Err(ExpectedIdentifier {
-                src: identifier.src.clone(),
+                src: self.src.clone(),
                 location: identifier.location,
             })
         }
@@ -100,7 +98,7 @@ impl Parser {
         use TokenType::*;
         consume!(self, LeftParen, |t: &Token| {
             ExpectedLeftParen {
-                src: t.src.clone(),
+                src: self.src.clone(),
                 location: self.previous_if_eof(t.location),
             }
         });
