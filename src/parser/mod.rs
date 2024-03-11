@@ -3,7 +3,9 @@ mod macros;
 pub mod parser_error;
 mod statement;
 
-use miette::SourceSpan;
+use std::sync::Arc;
+
+use miette::{NamedSource, SourceSpan};
 
 use self::parser_error::{ParserError, ParserErrors};
 use crate::ast::{
@@ -17,6 +19,7 @@ pub struct Parser {
     tokens: Vec<Token>,
     errors: Vec<ParserError>,
     current: usize,
+    src: Arc<NamedSource<String>>,
 }
 
 impl Parser {
@@ -33,10 +36,13 @@ impl Parser {
     }
 
     fn new(tokens: Vec<Token>) -> Self {
+        assert!(!tokens.is_empty());
+        let src = tokens[0].src.clone();
         Self {
             tokens,
             errors: vec![],
             current: 0,
+            src,
         }
     }
 
