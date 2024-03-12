@@ -107,6 +107,7 @@ pub enum StmtType {
         parameters: Vec<Name>,
         body: Vec<Stmt>,
     },
+    Return(Option<Expr>),
     Block(Vec<Stmt>),
     If {
         condition: Expr,
@@ -123,16 +124,16 @@ impl Display for Stmt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use StmtType::*;
         match &self.stmt_type {
-            Expression(expr) => writeln!(f, "Expr{}", expr),
-            Print(expr) => writeln!(f, "Print{}", expr),
+            Expression(expr) => writeln!(f, "Expr{expr}"),
+            Print(expr) => writeln!(f, "Print{expr}"),
             Var {
                 name,
                 initializer: Some(expr),
-            } => writeln!(f, "Var {} = {}", name, expr),
+            } => writeln!(f, "Var {name} = {expr}"),
             Var {
                 name,
                 initializer: None,
-            } => writeln!(f, "Var {}", name),
+            } => writeln!(f, "Var {name}"),
             Block(stmts) => {
                 writeln!(f, "{{")?;
                 stmts.iter().try_for_each(|s| write!(f, "{}", s))?;
@@ -174,6 +175,8 @@ impl Display for Stmt {
                 body.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
             }
+            Return(None) => writeln!(f, "return"),
+            Return(Some(expr)) => writeln!(f, "return {expr}"),
         }
     }
 }
