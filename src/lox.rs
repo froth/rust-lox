@@ -83,13 +83,17 @@ mod lox_tests {
                 let named_source = NamedSource::new(file_name.clone(), input.clone());
                 let result = lox.run(input, named_source);
                 if test_case.directive == "error" {
-                    let err = result.unwrap_err();
+                    let err = result.expect_err(
+                        format!("Test {file_name} meant to be failing but succeeded").as_str(),
+                    );
                     let handler = miette::JSONReportHandler::new();
                     let mut json = String::new();
                     handler.render_report(&mut json, err.as_ref()).unwrap();
                     format_json(json)
                 } else {
-                    result.unwrap();
+                    result.unwrap_or_else(|_| {
+                        panic!("Test {file_name} meant to be succeeding but failed.")
+                    });
                     printer.get_output()
                 }
             })

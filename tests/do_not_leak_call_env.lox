@@ -1,0 +1,29 @@
+error
+fun a() {
+    print x;
+}
+fun b() {
+    var x;
+    a();
+}
+b();
+----
+----
+{
+  "causes": [],
+  "filename": "tests/do_not_leak_call_env.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 1,
+        "offset": 20
+      }
+    }
+  ],
+  "message": "Undefined variable 'x'",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

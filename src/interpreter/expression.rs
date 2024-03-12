@@ -26,7 +26,7 @@ impl Interpreter {
     }
 
     fn read_variable(&self, name: &Name, expr: &Expr) -> Result<Value> {
-        let val = self.environment.get(name);
+        let val = self.environment.borrow().get(name);
         val.ok_or(UndefinedVariable {
             name: name.clone(),
             src: expr.src.clone(),
@@ -36,7 +36,7 @@ impl Interpreter {
 
     fn assign_variable(&mut self, name: &NameExpr, expr: &Expr) -> Result<Value> {
         let value = self.interpret_expr(expr)?;
-        if self.environment.assign(&name.name, &value) {
+        if self.environment.borrow_mut().assign(&name.name, &value) {
             Ok(value)
         } else {
             Err(UndefinedVariable {
@@ -380,7 +380,7 @@ mod value_interpreter_tests {
         let name: Name = "a".into();
         let right = literal(false.into());
         let expr = Expr::assign(name_expr(name.clone()), right);
-        let mut env = Environment::default();
+        let mut env = Environment::new();
         env.define(&name, Value::Nil);
         let mut under_test = Interpreter::with_env(Box::new(VecPrinter::new()), env);
         assert_matches!(

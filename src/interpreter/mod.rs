@@ -9,7 +9,7 @@ mod statement;
 mod types;
 pub mod value;
 
-use std::mem;
+use std::{cell::RefCell, rc::Rc};
 
 use crate::ast::stmt::Stmt;
 
@@ -22,14 +22,17 @@ use self::{
 type Result<T> = std::result::Result<T, RuntimeError>;
 pub struct Interpreter {
     printer: Box<dyn Printer>,
-    environment: Environment,
+    environment: Rc<RefCell<Environment>>,
+    global: Rc<RefCell<Environment>>,
 }
 
 impl Interpreter {
     pub fn new() -> Self {
+        let global = Rc::new(RefCell::new(Environment::with_native_functions()));
         Self {
             printer: Box::new(ConsolePrinter),
-            environment: Environment::with_native_functions(),
+            environment: global.clone(),
+            global,
         }
     }
 
@@ -37,30 +40,23 @@ impl Interpreter {
         statements.iter().try_for_each(|s| self.interpret_stmt(s))
     }
 
-    fn push_environment(&mut self) {
-        let new = Environment::default();
-        let old = mem::replace(&mut self.environment, new);
-        self.environment.parent = Some(Box::new(old))
-    }
-
-    fn pop_environment(&mut self) {
-        let parent = self.environment.parent.take();
-        let parent = parent.expect("Tried to pop global environment, bug in interpreter");
-        self.environment = *parent;
-    }
-
     #[cfg(test)]
     pub fn from_printer(printer: Box<dyn Printer>) -> Self {
+        let global = Rc::new(RefCell::new(Environment::new()));
         Self {
             printer,
-            environment: Environment::default(),
+            environment: global.clone(),
+            global,
         }
     }
+
     #[cfg(test)]
     pub fn with_env(printer: Box<dyn Printer>, environment: Environment) -> Self {
+        let global = Rc::new(RefCell::new(environment));
         Self {
             printer,
-            environment,
+            environment: global.clone(),
+            global,
         }
     }
 }
