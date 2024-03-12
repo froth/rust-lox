@@ -3,7 +3,7 @@ use core::fmt::Display;
 use crate::ast::{expr::Name, stmt::Stmt};
 
 use self::Callable::*;
-use super::{value::Value, Interpreter, Result};
+use super::{environment::Environment, value::Value, Interpreter, Result};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {
     Native {
@@ -25,13 +25,13 @@ impl Callable {
             Function {
                 parameters, body, ..
             } => {
-                interpreter.push_environment(); // TODO: this is very bad, it allows access to non global variables...
+                let global = interpreter.global.clone();
+                let mut env = Environment::from_parent(global);
                 parameters
                     .iter()
                     .zip(arguments.iter())
-                    .for_each(|(p, a)| interpreter.environment.define(p, a.clone()));
-                let result = interpreter.interpret(body);
-                interpreter.pop_environment();
+                    .for_each(|(p, a)| env.define(p, a.clone()));
+                let result = interpreter.execute_block(body, env);
                 result?;
                 Ok(Value::Nil)
             }

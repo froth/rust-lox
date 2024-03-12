@@ -1,9 +1,11 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::ast::{
     expr::{Expr, Name},
     stmt::{Stmt, StmtType::*},
 };
 
-use super::{callable::Callable, value::Value, Interpreter, Result};
+use super::{callable::Callable, environment::Environment, value::Value, Interpreter, Result};
 
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> Result<()> {
@@ -16,7 +18,10 @@ impl Interpreter {
                 name: key,
                 initializer,
             } => self.define_var(key, initializer),
-            Block(stmts) => self.execute_block(stmts),
+            Block(stmts) => {
+                let local_env = Environment::from_parent(self.environment.clone());
+                self.execute_block(stmts, local_env)
+            }
             If {
                 condition,
                 then_stmt,
@@ -35,7 +40,7 @@ impl Interpreter {
         let initializer = initializer
             .as_ref()
             .map_or(Ok(Value::Nil), |expr| self.interpret_expr(expr))?;
-        self.environment.define(key, initializer);
+        self.environment.borrow_mut().define(key, initializer);
         Ok(())
     }
 
@@ -45,14 +50,17 @@ impl Interpreter {
             parameters: arguments.to_vec(),
             body: body.to_vec(),
         };
-        self.environment.define(name, Value::Callable(function));
+        self.environment
+            .borrow_mut()
+            .define(name, Value::Callable(function));
         Ok(())
     }
 
-    fn execute_block(&mut self, stmts: &[Stmt]) -> Result<()> {
-        self.push_environment();
+    pub fn execute_block(&mut self, stmts: &[Stmt], environment: Environment) -> Result<()> {
+        let prev = self.environment.clone();
+        self.environment = Rc::new(RefCell::new(environment));
         let result = stmts.iter().try_for_each(|s| self.interpret_stmt(s));
-        self.pop_environment();
+        self.environment = prev;
         result
     }
 
