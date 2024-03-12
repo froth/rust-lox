@@ -1,4 +1,5 @@
 use core::fmt::Display;
+use std::{cell::RefCell, rc::Rc};
 
 use crate::ast::{expr::Name, stmt::Stmt};
 
@@ -17,6 +18,7 @@ pub enum Callable {
         name: Name,
         parameters: Vec<Name>,
         body: Vec<Stmt>,
+        closure: Rc<RefCell<Environment>>,
     },
 }
 
@@ -25,10 +27,12 @@ impl Callable {
         match self {
             Native { function, .. } => function(interpreter, arguments),
             Function {
-                parameters, body, ..
+                parameters,
+                body,
+                closure,
+                ..
             } => {
-                let global = interpreter.global.clone();
-                let mut env = Environment::from_parent(global);
+                let mut env = Environment::from_parent(closure.clone());
                 parameters
                     .iter()
                     .zip(arguments.iter())
@@ -36,7 +40,7 @@ impl Callable {
                 let result = interpreter.execute_block(body, env);
                 match result {
                     Ok(_) => Ok(Value::Nil),
-                    Err(RuntimeError::Return { value, .. }) => Ok(value),
+                    Err(RuntimeError::Return { value, .. }) => Ok(value.get().clone()),
                     Err(err) => Err(err),
                 }
             }

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use fragile::Fragile;
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
 use crate::{ast::expr::Name, interpreter::types::Type};
@@ -81,7 +82,7 @@ pub enum RuntimeError {
     },
     #[error("Return can not be used outside of functions")]
     Return {
-        value: Value,
+        value: Fragile<Value>, //TODO: Reevaluate if we need this after resolving and binding
         #[source_code]
         src: Arc<NamedSource<String>>,
         #[label("here")]

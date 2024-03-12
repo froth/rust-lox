@@ -4,7 +4,7 @@ use crate::ast::expr::Name;
 
 use super::{native_functions::native_functions, value::Value};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Environment {
     pub parent: Option<Rc<RefCell<Environment>>>,
     values: HashMap<Name, Value>,
