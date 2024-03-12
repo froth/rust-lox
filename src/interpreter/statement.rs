@@ -1,5 +1,6 @@
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
+use fragile::Fragile;
 use miette::{NamedSource, SourceSpan};
 
 use crate::ast::{
@@ -55,6 +56,7 @@ impl Interpreter {
             name: name.clone(),
             parameters: arguments.to_vec(),
             body: body.to_vec(),
+            closure: self.environment.clone(),
         };
         self.environment
             .borrow_mut()
@@ -99,6 +101,7 @@ impl Interpreter {
     ) -> Result<()> {
         let value = expr.as_ref().map(|e| self.interpret_expr(e)).transpose()?;
         let value = value.unwrap_or(Value::Nil);
+        let value = Fragile::new(value);
         Err(RuntimeError::Return {
             value,
             src,
