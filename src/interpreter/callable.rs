@@ -3,7 +3,9 @@ use core::fmt::Display;
 use crate::ast::{expr::Name, stmt::Stmt};
 
 use self::Callable::*;
-use super::{environment::Environment, value::Value, Interpreter, Result};
+use super::{
+    environment::Environment, runtime_error::RuntimeError, value::Value, Interpreter, Result,
+};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {
     Native {
@@ -32,8 +34,11 @@ impl Callable {
                     .zip(arguments.iter())
                     .for_each(|(p, a)| env.define(p, a.clone()));
                 let result = interpreter.execute_block(body, env);
-                result?;
-                Ok(Value::Nil)
+                match result {
+                    Ok(_) => Ok(Value::Nil),
+                    Err(RuntimeError::Return { value, .. }) => Ok(value),
+                    Err(err) => Err(err),
+                }
             }
         }
     }

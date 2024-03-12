@@ -4,6 +4,8 @@ use miette::{Diagnostic, NamedSource, SourceSpan};
 
 use crate::{ast::expr::Name, interpreter::types::Type};
 
+use super::value::Value;
+
 #[derive(thiserror::Error, Debug, Diagnostic)]
 pub enum RuntimeError {
     #[error("Wrong operand type for operator {operator} : expected {expected} but got {actual}")]
@@ -72,6 +74,14 @@ pub enum RuntimeError {
     WrongArity {
         expected: usize,
         actual: usize,
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
+    #[error("Return can not be used outside of functions")]
+    Return {
+        value: Value,
         #[source_code]
         src: Arc<NamedSource<String>>,
         #[label("here")]

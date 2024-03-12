@@ -1,11 +1,16 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::Arc};
+
+use miette::{NamedSource, SourceSpan};
 
 use crate::ast::{
     expr::{Expr, Name},
     stmt::{Stmt, StmtType::*},
 };
 
-use super::{callable::Callable, environment::Environment, value::Value, Interpreter, Result};
+use super::{
+    callable::Callable, environment::Environment, runtime_error::RuntimeError, value::Value,
+    Interpreter, Result,
+};
 
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> Result<()> {
@@ -33,6 +38,7 @@ impl Interpreter {
                 parameters: arguments,
                 body,
             } => self.define_function(name, arguments, body),
+            Return(expr) => self.execute_return(expr, statement.src.clone(), statement.location),
         }
     }
 
@@ -83,6 +89,21 @@ impl Interpreter {
             self.interpret_stmt(body)?;
         }
         Ok(())
+    }
+
+    fn execute_return(
+        &mut self,
+        expr: &Option<Expr>,
+        src: Arc<NamedSource<String>>,
+        location: SourceSpan,
+    ) -> Result<()> {
+        let value = expr.as_ref().map(|e| self.interpret_expr(e)).transpose()?;
+        let value = value.unwrap_or(Value::Nil);
+        Err(RuntimeError::Return {
+            value,
+            src,
+            location,
+        })
     }
 }
 #[cfg(test)]

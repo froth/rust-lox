@@ -19,6 +19,7 @@ impl Parser {
             If => self.if_statement(),
             While => self.while_statement(),
             For => self.for_statement(),
+            Return => self.return_statement(),
             _ => self.expression_statement(),
         }
     }
@@ -194,6 +195,21 @@ impl Parser {
         let location = print_token_location.until(semicolon.location);
         Ok(Stmt::print(expr, location))
     }
+
+    fn return_statement(&mut self) -> Result<Stmt> {
+        let return_token_location = self.advance().location;
+        let expr = (!check!(self, TokenType::Semicolon))
+            .then(|| self.expression())
+            .transpose()?;
+
+        let semicolon_location =
+            consume!(self, TokenType::Semicolon, |t| self.expected_semicolon(t)).location;
+        Ok(Stmt {
+            stmt_type: StmtType::Return(expr),
+            location: return_token_location.until(semicolon_location),
+            src: self.src.clone(),
+        })
+    }
 }
 
 #[cfg(test)]
@@ -355,6 +371,18 @@ mod test {
                 location: _,
             }
         )
+    }
+
+    #[test]
+    fn parse_return() {
+        let tokens = vec![
+            token(TokenType::Return),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_stmt(tokens).unwrap();
+        assert_eq!(stmt.to_string().trim_end(), "return (nil)")
     }
 
     #[test]
