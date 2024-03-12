@@ -66,7 +66,7 @@ impl Interpreter {
             }
         } else {
             Err(CallingNonCallable {
-                actual: callee_value.into(),
+                actual: callee_value.get_type(),
                 src: callee.src.clone(),
                 location: callee.location,
             })
@@ -87,7 +87,7 @@ impl Interpreter {
             (Value::Number(_), value) => Err(WrongType {
                 operator: token.lexeme.clone(),
                 expected: Type::Number,
-                actual: value.into(),
+                actual: value.get_type(),
                 src: token.src.clone(),
                 operator_location: token.location,
                 operand_location: right.location,
@@ -95,7 +95,7 @@ impl Interpreter {
             (value, Value::Number(_)) => Err(WrongType {
                 operator: token.lexeme.clone(),
                 expected: Type::Number,
-                actual: value.into(),
+                actual: value.get_type(),
                 src: token.src.clone(),
                 operator_location: token.location,
                 operand_location: left.location,
@@ -103,8 +103,8 @@ impl Interpreter {
             (lhs, rhs) => Err(WrongTypes {
                 operator: token.lexeme.clone(),
                 expected: Type::Number,
-                actual_lhs: lhs.into(),
-                actual_rhs: rhs.into(),
+                actual_lhs: lhs.get_type(),
+                actual_rhs: rhs.get_type(),
                 src: token.src.clone(),
                 operator_location: token.location,
                 lhs: left.location,
@@ -131,8 +131,8 @@ impl Interpreter {
             (Value::String(l), Value::String(r)) => Ok(Value::String(l + r.as_str())),
             (Value::Number(l), Value::Number(r)) => Ok(Value::Number(l + r)),
             (l, r) => Err(PlusOperatorWrongTypes {
-                actual_lhs: l.into(),
-                actual_rhs: r.into(),
+                actual_lhs: l.get_type(),
+                actual_rhs: r.get_type(),
                 src: token.src.clone(),
                 operator_location: token.location,
                 lhs: left.location,
@@ -185,7 +185,7 @@ impl Interpreter {
                     Err(WrongType {
                         operator: token.lexeme.clone(),
                         expected: Type::Number,
-                        actual: right.into(),
+                        actual: right.get_type(),
                         src: token.src.clone(),
                         operator_location: token.location,
                         operand_location: expr.location,

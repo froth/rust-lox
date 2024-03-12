@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use super::callable::Callable;
+use super::{callable::Callable, types::Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
@@ -17,6 +17,16 @@ impl Value {
             Value::Boolean(bool) => *bool,
             Value::Nil => false,
             _ => true,
+        }
+    }
+
+    pub fn get_type(&self) -> Type {
+        match self {
+            Value::Callable(_) => Type::Callable,
+            Value::String(_) => Type::String,
+            Value::Number(_) => Type::Number,
+            Value::Boolean(_) => Type::Boolean,
+            Value::Nil => Type::Nil,
         }
     }
 }

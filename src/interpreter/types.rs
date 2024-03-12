@@ -1,5 +1,3 @@
-use super::value::Value;
-
 #[derive(Debug, strum::Display)]
 pub enum Type {
     Callable,
@@ -7,16 +5,4 @@ pub enum Type {
     Number,
     Boolean,
     Nil,
-}
-
-impl From<Value> for Type {
-    fn from(value: Value) -> Self {
-        match value {
-            Value::Callable(_) => Type::Callable,
-            Value::String(_) => Type::String,
-            Value::Number(_) => Type::Number,
-            Value::Boolean(_) => Type::Boolean,
-            Value::Nil => Type::Nil,
-        }
-    }
 }
