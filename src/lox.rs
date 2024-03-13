@@ -26,8 +26,12 @@ impl Lox {
         Ok(())
     }
 
-    pub fn run_repl(&mut self, source: String) -> miette::Result<Option<Value>> {
-        let named_source = NamedSource::new("repl", source.clone());
+    pub fn run_repl(
+        &mut self,
+        source: String,
+        repl_counter: usize,
+    ) -> miette::Result<Option<Value>> {
+        let named_source = NamedSource::new(format!("repl({repl_counter})"), source.clone());
         let tokens = Scanner::scan(source, named_source, self.verbose)?;
         match Parser::parse(tokens, self.verbose) {
             Ok(statements) => {
