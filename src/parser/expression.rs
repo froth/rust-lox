@@ -1,5 +1,6 @@
-use crate::ast::expr::Literal::{self};
-use crate::ast::expr::{Expr, NameExpr};
+use crate::ast::expr::Expr;
+use crate::ast::literal::Literal;
+use crate::ast::name::NameExpr;
 use crate::ast::token::Token;
 use crate::ast::{expr::ExprType, token::TokenType};
 use crate::parser::macros::{check, consume};
@@ -24,7 +25,6 @@ impl Parser {
                 let name_expr = NameExpr {
                     name: name.clone(),
                     location: expr.location,
-                    src: expr.src,
                 };
                 return Ok(Expr::assign(name_expr, value));
             }

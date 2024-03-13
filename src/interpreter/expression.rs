@@ -1,7 +1,8 @@
 use miette::SourceSpan;
 
 use crate::ast::{
-    expr::{Expr, ExprType, Name, NameExpr},
+    expr::{Expr, ExprType},
+    name::{Name, NameExpr},
     token::{Token, TokenType},
 };
 
@@ -206,7 +207,9 @@ mod value_interpreter_tests {
 
     use crate::{
         ast::{
-            expr::{Expr, Literal, Name, NameExpr},
+            expr::Expr,
+            literal::Literal,
+            name::{Name, NameExpr},
             token::{Token, TokenType},
         },
         interpreter::{
@@ -405,7 +408,6 @@ mod value_interpreter_tests {
         NameExpr {
             name,
             location: (0, 1).into(),
-            src: NamedSource::new("name", String::new()).into(),
         }
     }
 }

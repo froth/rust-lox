@@ -3,7 +3,7 @@ use std::sync::Arc;
 use fragile::Fragile;
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
-use crate::{ast::expr::Name, interpreter::types::Type};
+use crate::{ast::name::Name, interpreter::types::Type};
 
 use super::value::Value;
 

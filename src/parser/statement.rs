@@ -1,6 +1,7 @@
 use std::vec;
 
-use crate::ast::expr::{Expr, ExprType, Literal};
+use crate::ast::expr::{Expr, ExprType};
+use crate::ast::literal::Literal;
 use crate::ast::stmt::{Stmt, StmtType};
 use crate::ast::token::{Token, TokenType};
 use crate::source_span_extensions::SourceSpanExtensions;

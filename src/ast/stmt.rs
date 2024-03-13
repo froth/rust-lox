@@ -2,7 +2,7 @@ use std::{fmt::Display, sync::Arc};
 
 use miette::{NamedSource, SourceSpan};
 
-use super::expr::{Expr, Name};
+use super::{expr::Expr, name::Name};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Stmt {
