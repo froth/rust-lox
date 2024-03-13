@@ -408,6 +408,7 @@ mod value_interpreter_tests {
         NameExpr {
             name,
             location: (0, 1).into(),
+            src: NamedSource::new("name", String::new()).into(),
         }
     }
 }
