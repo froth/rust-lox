@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use fragile::Fragile;
 use miette::{Diagnostic, NamedSource, SourceSpan};
 
 use crate::{ast::name::Name, interpreter::types::Type};
@@ -80,12 +79,27 @@ pub enum RuntimeError {
         #[label("here")]
         location: SourceSpan,
     },
-    #[error("Return can not be used outside of functions")]
-    Return {
-        value: Fragile<Value>, //TODO: Reevaluate if we need this after resolving and binding
-        #[source_code]
-        src: Arc<NamedSource<String>>,
-        #[label("here")]
-        location: SourceSpan,
-    },
+}
+
+#[derive(Debug)]
+pub(super) enum RuntimeErrorOrReturn {
+    RuntimeError(RuntimeError),
+    Return(Value),
+}
+
+impl From<RuntimeError> for RuntimeErrorOrReturn {
+    fn from(value: RuntimeError) -> Self {
+        RuntimeErrorOrReturn::RuntimeError(value)
+    }
+}
+
+impl RuntimeErrorOrReturn {
+    pub(super) fn unwrap_runtime_error(self) -> RuntimeError {
+        match self {
+            RuntimeErrorOrReturn::RuntimeError(runtime_error) => runtime_error,
+            RuntimeErrorOrReturn::Return(_) => {
+                panic!("Return can only be in functions: guaranteed by static analysis")
+            }
+        }
+    }
 }
