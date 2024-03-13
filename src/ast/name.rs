@@ -1,11 +1,12 @@
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
-use miette::SourceSpan;
+use miette::{NamedSource, SourceSpan};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NameExpr {
     pub name: Name,
     pub location: SourceSpan,
+    pub src: Arc<NamedSource<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

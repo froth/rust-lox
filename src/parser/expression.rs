@@ -25,6 +25,7 @@ impl Parser {
                 let name_expr = NameExpr {
                     name: name.clone(),
                     location: expr.location,
+                    src: value.src.clone(),
                 };
                 return Ok(Expr::assign(name_expr, value));
             }
