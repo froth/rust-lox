@@ -59,12 +59,14 @@ fn run_prompt(mut lox: Lox, args: Args) -> rustyline::Result<()> {
             eprintln!("Error: {:?}", err)
         }
     }
+    let mut repl_counter: usize = 0;
     loop {
+        repl_counter += 1;
         let readline = rl.readline(">> ");
         match readline {
             Ok(source) => {
                 rl.add_history_entry(source.as_str())?;
-                match lox.run_repl(source) {
+                match lox.run_repl(source, repl_counter) {
                     Ok(Some(value)) => println!("expr => {}", value),
                     Ok(None) => (),
                     Err(err) => println!("{:?}", err),
