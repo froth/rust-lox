@@ -4,12 +4,11 @@ use miette::{NamedSource, SourceSpan};
 
 use crate::{ast::token::Token, source_span_extensions::SourceSpanExtensions};
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct NameExpr {
-    pub name: Name,
-    pub location: SourceSpan,
-    pub src: Arc<NamedSource<String>>,
-}
+use super::{
+    literal::Literal,
+    name::{Name, NameExpr},
+};
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
     pub expr_type: ExprType,
@@ -104,7 +103,7 @@ impl Display for Expr {
             Grouping(expr) => write!(f, "(group {})", expr),
             Literal(literal) => write!(f, "({})", literal),
             Unary(token, expr) => write!(f, "({} {})", token.token_type, expr),
-            Variable(name) => write!(f, "(variable {})", name.0),
+            Variable(name) => write!(f, "(variable {})", name),
             Assign(name, right) => write!(f, "({}={})", name.name, right),
             Call(callee, arguments) => {
                 write!(f, "(Call {}=>(", callee)?;
@@ -127,27 +126,6 @@ pub enum ExprType {
     Unary(Token, Box<Expr>),
     Variable(Name),
     Call(Box<Expr>, Vec<Expr>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Name(String);
-
-impl From<&str> for Name {
-    fn from(value: &str) -> Self {
-        Name(value.to_string())
-    }
-}
-
-impl From<String> for Name {
-    fn from(value: String) -> Self {
-        Name(value)
-    }
-}
-
-impl Display for Name {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
 }
 
 impl ExprType {
@@ -181,52 +159,5 @@ impl ExprType {
 
     pub fn call(callee: Expr, arguments: Vec<Expr>) -> ExprType {
         Self::Call(callee.into(), arguments)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Literal {
-    String(String),
-    Number(f64),
-    Boolean(bool),
-    Nil,
-}
-impl Display for Literal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Literal::String(s) => write!(f, "\"{}\"", s),
-            Literal::Number(n) => write!(f, "{}", n),
-            Literal::Boolean(b) => write!(f, "{}", b),
-            Literal::Nil => write!(f, "nil"),
-        }
-    }
-}
-impl From<bool> for Literal {
-    fn from(value: bool) -> Self {
-        Literal::Boolean(value)
-    }
-}
-
-impl From<f32> for Literal {
-    fn from(value: f32) -> Self {
-        Literal::Number(value.into())
-    }
-}
-
-impl From<f64> for Literal {
-    fn from(value: f64) -> Self {
-        Literal::Number(value)
-    }
-}
-
-impl From<String> for Literal {
-    fn from(value: String) -> Self {
-        Literal::String(value)
-    }
-}
-
-impl From<&str> for Literal {
-    fn from(value: &str) -> Self {
-        Literal::String(value.to_string())
     }
 }

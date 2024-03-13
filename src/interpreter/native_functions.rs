@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::SystemTime};
 
-use crate::ast::expr::Name;
+use crate::ast::name::Name;
 
 use super::{callable::Callable, value::Value, Interpreter, Result};
 

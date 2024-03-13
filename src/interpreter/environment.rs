@@ -1,6 +1,6 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::ast::expr::Name;
+use crate::ast::name::Name;
 
 use super::{native_functions::native_functions, value::Value};
 

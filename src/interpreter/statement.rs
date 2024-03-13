@@ -4,7 +4,8 @@ use fragile::Fragile;
 use miette::{NamedSource, SourceSpan};
 
 use crate::ast::{
-    expr::{Expr, Name},
+    expr::Expr,
+    name::Name,
     stmt::{Stmt, StmtType::*},
 };
 
@@ -116,7 +117,8 @@ mod stmt_interpreter_tests {
 
     use crate::{
         ast::{
-            expr::{Expr, Literal},
+            expr::Expr,
+            literal::Literal,
             stmt::{Stmt, StmtType},
             token::{Token, TokenType},
         },

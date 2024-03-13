@@ -1,7 +1,7 @@
 use core::fmt::Display;
 use std::{cell::RefCell, rc::Rc};
 
-use crate::ast::{expr::Name, stmt::Stmt};
+use crate::ast::{name::Name, stmt::Stmt};
 
 use self::Callable::*;
 use super::{
