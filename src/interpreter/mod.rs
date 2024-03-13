@@ -16,10 +16,11 @@ use crate::ast::stmt::Stmt;
 use self::{
     environment::Environment,
     printer::{ConsolePrinter, Printer},
-    runtime_error::RuntimeError,
+    runtime_error::{RuntimeError, RuntimeErrorOrReturn},
 };
 
 type Result<T> = std::result::Result<T, RuntimeError>;
+type OrReturnResult<T> = std::result::Result<T, RuntimeErrorOrReturn>;
 pub struct Interpreter {
     printer: Box<dyn Printer>,
     environment: Rc<RefCell<Environment>>,
@@ -37,7 +38,8 @@ impl Interpreter {
     }
 
     pub fn interpret(&mut self, statements: &[Stmt]) -> Result<()> {
-        statements.iter().try_for_each(|s| self.interpret_stmt(s))
+        let ret = statements.iter().try_for_each(|s| self.interpret_stmt(s));
+        ret.map_err(|err| err.unwrap_runtime_error())
     }
 
     #[cfg(test)]

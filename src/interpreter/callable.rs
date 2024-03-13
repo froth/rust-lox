@@ -4,9 +4,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::ast::{name::Name, stmt::Stmt};
 
 use self::Callable::*;
-use super::{
-    environment::Environment, runtime_error::RuntimeError, value::Value, Interpreter, Result,
-};
+use super::{environment::Environment, value::Value, Interpreter, Result, RuntimeErrorOrReturn};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {
     Native {
@@ -40,8 +38,8 @@ impl Callable {
                 let result = interpreter.execute_block(body, env);
                 match result {
                     Ok(_) => Ok(Value::Nil),
-                    Err(RuntimeError::Return { value, .. }) => Ok(value.get().clone()),
-                    Err(err) => Err(err),
+                    Err(RuntimeErrorOrReturn::Return(value)) => Ok(value),
+                    Err(RuntimeErrorOrReturn::RuntimeError(err)) => Err(err),
                 }
             }
         }

@@ -1,7 +1,4 @@
-use std::{cell::RefCell, rc::Rc, sync::Arc};
-
-use fragile::Fragile;
-use miette::{NamedSource, SourceSpan};
+use std::{cell::RefCell, rc::Rc};
 
 use crate::ast::{
     expr::Expr,
@@ -10,21 +7,27 @@ use crate::ast::{
 };
 
 use super::{
-    callable::Callable, environment::Environment, runtime_error::RuntimeError, value::Value,
-    Interpreter, Result,
+    callable::Callable, environment::Environment, runtime_error::RuntimeErrorOrReturn,
+    value::Value, Interpreter, OrReturnResult, Result,
 };
 
 impl Interpreter {
-    pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> Result<()> {
+    pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> OrReturnResult<()> {
         match &statement.stmt_type {
-            Expression(expr) => self.interpret_expr(expr).map(|_| ()),
+            Expression(expr) => self
+                .interpret_expr(expr)
+                .map(|_| ())
+                .map_err(RuntimeErrorOrReturn::RuntimeError),
             Print(expr) => self
                 .interpret_expr(expr)
-                .map(|value| self.printer.print(value)),
+                .map(|value| self.printer.print(value))
+                .map_err(RuntimeErrorOrReturn::RuntimeError),
             Var {
                 name: key,
                 initializer,
-            } => self.define_var(key, initializer),
+            } => self
+                .define_var(key, initializer)
+                .map_err(RuntimeErrorOrReturn::RuntimeError),
             Block(stmts) => {
                 let local_env = Environment::from_parent(self.environment.clone());
                 self.execute_block(stmts, local_env)
@@ -39,8 +42,10 @@ impl Interpreter {
                 name,
                 parameters: arguments,
                 body,
-            } => self.define_function(name, arguments, body),
-            Return(expr) => self.execute_return(expr, statement.src.clone(), statement.location),
+            } => self
+                .define_function(name, arguments, body)
+                .map_err(RuntimeErrorOrReturn::RuntimeError),
+            Return(expr) => self.execute_return(expr),
         }
     }
 
@@ -65,7 +70,11 @@ impl Interpreter {
         Ok(())
     }
 
-    pub fn execute_block(&mut self, stmts: &[Stmt], environment: Environment) -> Result<()> {
+    pub(super) fn execute_block(
+        &mut self,
+        stmts: &[Stmt],
+        environment: Environment,
+    ) -> OrReturnResult<()> {
         let prev = self.environment.clone();
         self.environment = Rc::new(RefCell::new(environment));
         let result = stmts.iter().try_for_each(|s| self.interpret_stmt(s));
@@ -78,7 +87,7 @@ impl Interpreter {
         condition: &Expr,
         then_stmt: &Stmt,
         else_stmt: &Option<Box<Stmt>>,
-    ) -> Result<()> {
+    ) -> OrReturnResult<()> {
         if self.interpret_expr(condition)?.is_truthy() {
             self.interpret_stmt(then_stmt)?;
         } else if let Some(else_stmt) = else_stmt {
@@ -87,27 +96,17 @@ impl Interpreter {
         Ok(())
     }
 
-    fn execute_while(&mut self, condition: &Expr, body: &Stmt) -> Result<()> {
+    fn execute_while(&mut self, condition: &Expr, body: &Stmt) -> OrReturnResult<()> {
         while self.interpret_expr(condition)?.is_truthy() {
             self.interpret_stmt(body)?;
         }
         Ok(())
     }
 
-    fn execute_return(
-        &mut self,
-        expr: &Option<Expr>,
-        src: Arc<NamedSource<String>>,
-        location: SourceSpan,
-    ) -> Result<()> {
+    fn execute_return(&mut self, expr: &Option<Expr>) -> OrReturnResult<()> {
         let value = expr.as_ref().map(|e| self.interpret_expr(e)).transpose()?;
         let value = value.unwrap_or(Value::Nil);
-        let value = Fragile::new(value);
-        Err(RuntimeError::Return {
-            value,
-            src,
-            location,
-        })
+        Err(RuntimeErrorOrReturn::Return(value))
     }
 }
 #[cfg(test)]
@@ -147,7 +146,10 @@ mod stmt_interpreter_tests {
             Expr::variable("a".to_string(), token(TokenType::Eof)),
             (0, 1).into(),
         );
-        let err = interpreter.interpret_stmt(&stmt).unwrap_err();
+        let err = interpreter
+            .interpret_stmt(&stmt)
+            .unwrap_err()
+            .unwrap_runtime_error();
         assert_matches!(err, RuntimeError::UndefinedVariable { .. })
     }
 
@@ -165,7 +167,10 @@ mod stmt_interpreter_tests {
             Expr::variable("a".to_string(), token(TokenType::Eof)),
             (0, 1).into(),
         );
-        let err = interpreter.interpret_stmt(&stmt).unwrap_err();
+        let err = interpreter
+            .interpret_stmt(&stmt)
+            .unwrap_err()
+            .unwrap_runtime_error();
         assert_matches!(err, RuntimeError::UndefinedVariable { .. })
     }
 
