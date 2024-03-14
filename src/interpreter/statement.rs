@@ -14,39 +14,32 @@ use super::{
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> OrReturnResult<()> {
         match &statement.stmt_type {
-            Expression(expr) => self
-                .interpret_expr(expr)
-                .map(|_| ())
-                .map_err(RuntimeErrorOrReturn::RuntimeError),
+            Expression(expr) => self.interpret_expr(expr).map(|_| ())?,
             Print(expr) => self
                 .interpret_expr(expr)
-                .map(|value| self.printer.print(value))
-                .map_err(RuntimeErrorOrReturn::RuntimeError),
+                .map(|value| self.printer.print(value))?,
             Var {
                 name: key,
                 initializer,
-            } => self
-                .define_var(key, initializer)
-                .map_err(RuntimeErrorOrReturn::RuntimeError),
+            } => self.define_var(key, initializer)?,
             Block(stmts) => {
                 let local_env = Environment::from_parent(self.environment.clone());
-                self.execute_block(stmts, local_env)
+                self.execute_block(stmts, local_env)?
             }
             If {
                 condition,
                 then_stmt,
                 else_stmt,
-            } => self.execute_if(condition, then_stmt, else_stmt),
-            While { condition, body } => self.execute_while(condition, body.as_ref()),
+            } => self.execute_if(condition, then_stmt, else_stmt)?,
+            While { condition, body } => self.execute_while(condition, body.as_ref())?,
             Function {
                 name,
-                parameters: arguments,
+                parameters,
                 body,
-            } => self
-                .define_function(name, arguments, body)
-                .map_err(RuntimeErrorOrReturn::RuntimeError),
-            Return(expr) => self.execute_return(expr),
-        }
+            } => self.define_function(name, parameters, body)?,
+            Return(expr) => self.execute_return(expr)?,
+        };
+        Ok(())
     }
 
     fn define_var(&mut self, key: &Name, initializer: &Option<Expr>) -> Result<()> {
@@ -57,10 +50,10 @@ impl Interpreter {
         Ok(())
     }
 
-    fn define_function(&mut self, name: &Name, arguments: &[Name], body: &[Stmt]) -> Result<()> {
+    fn define_function(&mut self, name: &Name, parameters: &[Name], body: &[Stmt]) -> Result<()> {
         let function = Callable::Function {
             name: name.clone(),
-            parameters: arguments.to_vec(),
+            parameters: parameters.to_vec(),
             body: body.to_vec(),
             closure: self.environment.clone(),
         };

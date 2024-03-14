@@ -98,7 +98,7 @@ impl RuntimeErrorOrReturn {
         match self {
             RuntimeErrorOrReturn::RuntimeError(runtime_error) => runtime_error,
             RuntimeErrorOrReturn::Return(_) => {
-                panic!("Return can only be in functions: guaranteed by static analysis")
+                panic!("Return outside of function; should be guaranteed by static analysis")
             }
         }
     }
