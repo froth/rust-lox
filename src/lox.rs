@@ -4,7 +4,7 @@ use crate::{
     interpreter::{value::Value, Interpreter},
     parser::{parser_error::ParserError::ExpectedSemicolon, Parser},
     resolver::Resolver,
-    scanning::Scanner,
+    scanner::Scanner,
 };
 
 pub struct Lox {

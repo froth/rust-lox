@@ -16,7 +16,7 @@ mod interpreter;
 mod lox;
 mod parser;
 mod resolver;
-mod scanning;
+mod scanner;
 mod source_span_extensions;
 
 fn main() {
