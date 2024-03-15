@@ -3,6 +3,7 @@ use miette::NamedSource;
 use crate::{
     interpreter::{value::Value, Interpreter},
     parser::{parser_error::ParserError::ExpectedSemicolon, Parser},
+    resolver::Resolver,
     scanning::Scanner,
 };
 
@@ -22,6 +23,8 @@ impl Lox {
     pub fn run(&mut self, source: String, named_source: NamedSource<String>) -> miette::Result<()> {
         let tokens = Scanner::scan(source, named_source, self.verbose)?;
         let statements = Parser::parse(tokens, self.verbose)?;
+        let locals = Resolver::resolve(&statements, self.verbose)?;
+        self.interpreter.add_locals(locals);
         self.interpreter.interpret(&statements)?;
         Ok(())
     }
@@ -35,6 +38,8 @@ impl Lox {
         let tokens = Scanner::scan(source, named_source, self.verbose)?;
         match Parser::parse(tokens, self.verbose) {
             Ok(statements) => {
+                let locals = Resolver::resolve(&statements, self.verbose)?;
+                self.interpreter.add_locals(locals);
                 self.interpreter.interpret(&statements)?;
                 Ok(None)
             }

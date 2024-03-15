@@ -15,6 +15,7 @@ mod ast;
 mod interpreter;
 mod lox;
 mod parser;
+mod resolver;
 mod scanning;
 mod source_span_extensions;
 

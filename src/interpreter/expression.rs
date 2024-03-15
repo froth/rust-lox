@@ -1,3 +1,5 @@
+use std::fs::copy;
+
 use miette::SourceSpan;
 
 use crate::ast::{
@@ -26,10 +28,14 @@ impl Interpreter {
         }
     }
 
-    fn read_variable(&self, name: &Name, expr: &Expr) -> Result<Value> {
-        let val = self.environment.borrow().get(name);
+    fn read_variable(&self, name: &NameExpr, expr: &Expr) -> Result<Value> {
+        let val = if let Some(distance) = self.locals.get(name) {
+            self.environment.borrow().get_at(*distance, &name.name)
+        } else {
+            self.global.borrow().get(&name.name)
+        };
         val.ok_or(UndefinedVariable {
-            name: name.clone(),
+            name: name.name.clone(),
             src: expr.src.clone(),
             location: expr.location,
         })
@@ -37,7 +43,14 @@ impl Interpreter {
 
     fn assign_variable(&mut self, name: &NameExpr, expr: &Expr) -> Result<Value> {
         let value = self.interpret_expr(expr)?;
-        if self.environment.borrow_mut().assign(&name.name, &value) {
+        let result = if let Some(distance) = self.locals.get(name) {
+            self.environment
+                .borrow_mut()
+                .assign_at(*distance, &name.name, &value)
+        } else {
+            self.global.borrow_mut().assign(&name.name, &value)
+        };
+        if result {
             Ok(value)
         } else {
             Err(UndefinedVariable {
