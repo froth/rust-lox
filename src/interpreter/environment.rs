@@ -72,7 +72,21 @@ impl Environment {
 
 #[cfg(test)]
 mod environment_tests {
-    use crate::interpreter::{environment::Environment, value::Value};
+    use std::{cell::RefCell, rc::Rc};
+
+    use crate::{
+        ast::name::Name,
+        interpreter::{environment::Environment, value::Value},
+    };
+
+    fn create_depth(depth: usize, top: Environment) -> Environment {
+        assert!(depth > 0);
+        let mut global = top;
+        for _ in 1..depth {
+            global = Environment::from_parent(Rc::new(RefCell::new(global)));
+        }
+        global
+    }
 
     #[test]
     fn define_get() {
@@ -102,5 +116,17 @@ mod environment_tests {
         assert!(!assigned);
         let returned = env.get(&name);
         assert_eq!(returned, None)
+    }
+
+    #[test]
+    fn assign_and_get_from_depth() {
+        let name: Name = "a".into();
+        let value = Value::Boolean(true);
+        let mut top = Environment::new();
+        top.define(&name, Value::Nil);
+        let mut env = create_depth(8, top);
+        env.assign_at(7, &name, &value);
+        let ret = env.get_at(7, &name).unwrap();
+        assert_eq!(value, ret)
     }
 }
