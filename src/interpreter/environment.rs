@@ -38,26 +38,14 @@ impl Environment {
     }
 
     pub fn get(&self, key: &Name) -> Option<Value> {
-        self.values
-            .get(key)
-            .cloned()
-            .or(self.parent.as_ref().and_then(|p| p.borrow().get(key)))
+        self.values.get(key).cloned()
     }
 
     pub fn assign(&mut self, key: &Name, value: &Value) -> bool {
-        let local_assigned = self
-            .values
+        self.values
             .get_mut(key)
             .map(|old| *old = value.clone())
-            .is_some();
-        if local_assigned {
-            true
-        } else {
-            self.parent
-                .as_mut()
-                .map(|p| p.borrow_mut().assign(key, value))
-                .unwrap_or(false)
-        }
+            .is_some()
     }
 
     pub fn get_at(&self, distance: usize, name: &Name) -> Option<Value> {
@@ -84,16 +72,7 @@ impl Environment {
 
 #[cfg(test)]
 mod environment_tests {
-    use std::{cell::RefCell, collections::HashMap, rc::Rc};
-
     use crate::interpreter::{environment::Environment, value::Value};
-
-    pub fn local(parent: Environment) -> Environment {
-        Environment {
-            parent: Some(Rc::new(RefCell::new(parent))),
-            values: HashMap::default(),
-        }
-    }
 
     #[test]
     fn define_get() {
@@ -123,42 +102,5 @@ mod environment_tests {
         assert!(!assigned);
         let returned = env.get(&name);
         assert_eq!(returned, None)
-    }
-
-    #[test]
-    fn define_get_from_parent() {
-        let mut global = Environment::new();
-        let name = "x".into();
-        global.define(&name, Value::Boolean(true));
-        let local = local(global);
-        let returned = local.get(&name);
-        assert_eq!(returned, Some(Value::Boolean(true)))
-    }
-
-    #[test]
-    fn define_assign_to_parent() {
-        let mut global = Environment::new();
-        let name = "x".into();
-        global.define(&name, Value::Nil);
-        let mut local = local(global);
-        let assigned = local.assign(&name, &Value::Boolean(false));
-        assert!(assigned);
-        let parent: Rc<RefCell<Environment>> = local.parent.unwrap();
-        let returned = parent.borrow_mut().get(&name);
-        assert_eq!(returned, Some(Value::Boolean(false)))
-    }
-
-    #[test]
-    fn shadowing() {
-        let mut global = Environment::new();
-        let name = "x".into();
-        global.define(&name, Value::Nil);
-        let mut local = local(global);
-        local.define(&name, Value::Boolean(false));
-        let loc_return = local.get(&name);
-        let parent = local.parent.unwrap();
-        let glob_return = parent.borrow_mut().get(&name);
-        assert_eq!(loc_return, Some(Value::Boolean(false)));
-        assert_eq!(glob_return, Some(Value::Nil))
     }
 }
