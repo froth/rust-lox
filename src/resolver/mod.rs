@@ -13,6 +13,12 @@ use self::resolution_error::ResolutionError;
 pub struct Resolver {
     locals: HashMap<NameExpr, usize>,
     scopes: Vec<HashMap<Name, bool>>,
+    current_function: Option<FunctionType>,
+}
+
+#[derive(Debug)]
+enum FunctionType {
+    Function,
 }
 
 type Result<T> = std::result::Result<T, ResolutionError>;
@@ -45,9 +51,18 @@ impl Resolver {
             } => {
                 self.declare(name);
                 self.define(name);
-                self.resolve_function(parameters, body)
+                self.resolve_function(parameters, body, FunctionType::Function)
             }
-            Return(expr) => expr.iter().try_for_each(|e| self.resolve_expr(e)),
+            Return(expr) => {
+                if self.current_function.is_none() {
+                    Err(ResolutionError::InvalidReturn {
+                        src: statement.src.clone(),
+                        location: statement.location,
+                    })
+                } else {
+                    expr.iter().try_for_each(|e| self.resolve_expr(e))
+                }
+            }
             Block(statements) => self.resolve_block(statements),
             If {
                 condition,
@@ -72,7 +87,13 @@ impl Resolver {
         Ok(())
     }
 
-    fn resolve_function(&mut self, parameters: &[Name], body: &[Stmt]) -> Result<()> {
+    fn resolve_function(
+        &mut self,
+        parameters: &[Name],
+        body: &[Stmt],
+        function_type: FunctionType,
+    ) -> Result<()> {
+        let enclosing_function = std::mem::replace(&mut self.current_function, Some(function_type));
         self.begin_scope();
         parameters.iter().for_each(|p| {
             self.declare(p);
@@ -80,6 +101,7 @@ impl Resolver {
         });
         self.resolve_statements(body)?;
         self.end_scope();
+        self.current_function = enclosing_function;
         Ok(())
     }
 

@@ -1,0 +1,22 @@
+error
+return 1;
+----
+----
+{
+  "causes": [],
+  "filename": "tests/resolver_errors/return_from_top.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 9,
+        "offset": 0
+      }
+    }
+  ],
+  "message": "Can't return from top-level code",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)
