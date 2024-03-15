@@ -9,9 +9,9 @@ mod statement;
 mod types;
 pub mod value;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::ast::stmt::Stmt;
+use crate::ast::{name::NameExpr, stmt::Stmt};
 
 use self::{
     environment::Environment,
@@ -25,6 +25,7 @@ pub struct Interpreter {
     printer: Box<dyn Printer>,
     environment: Rc<RefCell<Environment>>,
     global: Rc<RefCell<Environment>>,
+    locals: HashMap<NameExpr, usize>,
 }
 
 impl Interpreter {
@@ -34,6 +35,7 @@ impl Interpreter {
             printer: Box::new(ConsolePrinter),
             environment: global.clone(),
             global,
+            locals: HashMap::new(),
         }
     }
 
@@ -42,6 +44,9 @@ impl Interpreter {
         ret.map_err(|err| err.unwrap_runtime_error())
     }
 
+    pub fn add_locals(&mut self, locals: HashMap<NameExpr, usize>) {
+        self.locals.extend(locals)
+    }
     #[cfg(test)]
     pub fn from_printer(printer: Box<dyn Printer>) -> Self {
         let global = Rc::new(RefCell::new(Environment::new()));
@@ -49,6 +54,7 @@ impl Interpreter {
             printer,
             environment: global.clone(),
             global,
+            locals: HashMap::new(),
         }
     }
 
@@ -59,6 +65,7 @@ impl Interpreter {
             printer,
             environment: global.clone(),
             global,
+            locals: HashMap::new(),
         }
     }
 }

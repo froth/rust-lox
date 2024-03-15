@@ -1,0 +1,26 @@
+error
+var a = 1;
+{
+  var a = a + 2; // scala does recursive var declaration with fallback to 0 and prints 2...
+  print a;
+}
+----
+----
+{
+  "causes": [],
+  "filename": "tests/resolver_errors/recursive_var.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 1,
+        "offset": 23
+      }
+    }
+  ],
+  "message": "Can't read local variable \"a\" in its own initializer",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

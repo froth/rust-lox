@@ -59,6 +59,27 @@ impl Environment {
                 .unwrap_or(false)
         }
     }
+
+    pub fn get_at(&self, distance: usize, name: &Name) -> Option<Value> {
+        if distance == 0 {
+            self.get(name)
+        } else {
+            self.parent
+                .as_ref()
+                .and_then(|p| p.borrow().get_at(distance - 1, name))
+        }
+    }
+
+    pub fn assign_at(&mut self, distance: usize, name: &Name, value: &Value) -> bool {
+        if distance == 0 {
+            self.assign(name, value)
+        } else {
+            self.parent
+                .as_ref()
+                .map(|p| p.borrow_mut().assign_at(distance - 1, name, value))
+                .expect("guaranteed by resolver")
+        }
+    }
 }
 
 #[cfg(test)]

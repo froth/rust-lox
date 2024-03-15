@@ -66,7 +66,7 @@ impl Expr {
         let src = token.src.clone();
         let location = token.location;
         Self {
-            expr_type: ExprType::variable(name),
+            expr_type: ExprType::variable(name, src.clone(), location),
             location,
             src,
         }
@@ -103,7 +103,7 @@ impl Display for Expr {
             Grouping(expr) => write!(f, "(group {})", expr),
             Literal(literal) => write!(f, "({})", literal),
             Unary(token, expr) => write!(f, "({} {})", token.token_type, expr),
-            Variable(name) => write!(f, "(variable {})", name),
+            Variable(name) => write!(f, "(variable {})", name.name),
             Assign(name, right) => write!(f, "({}={})", name.name, right),
             Call(callee, arguments) => {
                 write!(f, "(Call {}=>(", callee)?;
@@ -124,7 +124,7 @@ pub enum ExprType {
     Grouping(Box<Expr>),
     Literal(Literal),
     Unary(Token, Box<Expr>),
-    Variable(Name),
+    Variable(NameExpr),
     Call(Box<Expr>, Vec<Expr>),
 }
 
@@ -149,8 +149,12 @@ impl ExprType {
         Self::Unary(token, Box::new(expr))
     }
 
-    pub fn variable(name: String) -> ExprType {
-        Self::Variable(Name(name))
+    pub fn variable(name: String, src: Arc<NamedSource<String>>, location: SourceSpan) -> ExprType {
+        Self::Variable(NameExpr {
+            name: Name(name),
+            location,
+            src: src.clone(),
+        })
     }
 
     pub fn assign(name: NameExpr, expr: Expr) -> ExprType {

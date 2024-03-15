@@ -1,6 +1,5 @@
 use crate::ast::expr::Expr;
 use crate::ast::literal::Literal;
-use crate::ast::name::NameExpr;
 use crate::ast::token::Token;
 use crate::ast::{expr::ExprType, token::TokenType};
 use crate::parser::macros::{check, consume};
@@ -21,12 +20,7 @@ impl Parser {
         let expr = self.or()?;
         if match_token!(self, TokenType::Equal).is_some() {
             let value = self.assignment()?;
-            if let ExprType::Variable(name) = &expr.expr_type {
-                let name_expr = NameExpr {
-                    name: name.clone(),
-                    location: expr.location,
-                    src: value.src.clone(),
-                };
+            if let ExprType::Variable(name_expr) = expr.expr_type {
                 return Ok(Expr::assign(name_expr, value));
             }
             self.errors.push(InvalidAssignmentTarget {
