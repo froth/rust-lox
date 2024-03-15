@@ -1,10 +1,8 @@
-use std::fs::copy;
-
 use miette::SourceSpan;
 
 use crate::ast::{
     expr::{Expr, ExprType},
-    name::{Name, NameExpr},
+    name::NameExpr,
     token::{Token, TokenType},
 };
 
