@@ -14,4 +14,11 @@ pub enum ResolutionError {
         #[label("here")]
         location: SourceSpan,
     },
+    #[error("Can't return from top-level code")]
+    InvalidReturn {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
 }
