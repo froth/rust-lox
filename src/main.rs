@@ -1,3 +1,12 @@
+mod args;
+mod ast;
+mod interpreter;
+mod lox;
+mod parser;
+mod resolver;
+mod scanner;
+mod source_span_extensions;
+
 use std::fs;
 
 use clap::Parser;
@@ -9,15 +18,6 @@ use rustyline::{
     error::ReadlineError, highlight::MatchingBracketHighlighter,
     validate::MatchingBracketValidator, Completer, Editor, Helper, Highlighter, Hinter, Validator,
 };
-
-mod args;
-mod ast;
-mod interpreter;
-mod lox;
-mod parser;
-mod resolver;
-mod scanner;
-mod source_span_extensions;
 
 fn main() {
     let args = Args::parse();

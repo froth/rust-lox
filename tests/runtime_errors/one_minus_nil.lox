@@ -22,7 +22,7 @@ error
       }
     }
   ],
-  "message": "Wrong operand type for operator - : expected Number but got Nil",
+  "message": "Wrong operand type for operator \"-\": expected Number but got Nil",
   "related": [],
   "severity": "error"
 }

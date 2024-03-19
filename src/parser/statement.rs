@@ -427,7 +427,7 @@ mod test {
         let stmt = parse_stmt(tokens).unwrap();
         assert_eq!(
             stmt.to_string().trim_end(),
-            "{\nVar name = (nil)\nwhile (EqualEqual (variable name) (nil)) {\n{\nExpr(nil)\nExpr(name=(true))\n}\n}\n}"
+            "{\nVar name = (nil)\nwhile (== (variable name) (nil)) {\n{\nExpr(nil)\nExpr(name=(true))\n}\n}\n}"
         )
     }
 }

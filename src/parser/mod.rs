@@ -216,7 +216,6 @@ mod test_helpers {
     pub(super) fn token(token_type: TokenType) -> Token {
         Token {
             token_type,
-            lexeme: "FAKE_LEXEME".into(),
             location: (1, 1).into(),
             src: NamedSource::new("", String::new()).into(),
         }
@@ -224,7 +223,6 @@ mod test_helpers {
     pub(super) fn token_with_location(token_type: TokenType, location: SourceSpan) -> Token {
         Token {
             token_type,
-            lexeme: "FAKE_LEXEME".into(),
             location,
             src: NamedSource::new("", String::new()).into(),
         }

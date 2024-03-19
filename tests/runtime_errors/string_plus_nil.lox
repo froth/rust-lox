@@ -29,7 +29,7 @@ error
       }
     }
   ],
-  "message": "Wrong operand types for operator + : expected both String of both Number but got String and Nil",
+  "message": "Wrong operand types for operator \"+\": expected both String of both Number but got String and Nil",
   "related": [],
   "severity": "error"
 }

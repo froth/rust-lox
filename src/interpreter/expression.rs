@@ -97,7 +97,7 @@ impl Interpreter {
         match (left_value?, right_value?) {
             (Value::Number(l), Value::Number(r)) => Ok(f(l, r)),
             (Value::Number(_), value) => Err(WrongType {
-                operator: token.lexeme.clone(),
+                operator: token.token_type.to_string(),
                 expected: Type::Number,
                 actual: value.get_type(),
                 src: token.src.clone(),
@@ -105,7 +105,7 @@ impl Interpreter {
                 operand_location: right.location,
             }),
             (value, Value::Number(_)) => Err(WrongType {
-                operator: token.lexeme.clone(),
+                operator: token.token_type.to_string(),
                 expected: Type::Number,
                 actual: value.get_type(),
                 src: token.src.clone(),
@@ -113,7 +113,7 @@ impl Interpreter {
                 operand_location: left.location,
             }),
             (lhs, rhs) => Err(WrongTypes {
-                operator: token.lexeme.clone(),
+                operator: token.token_type.to_string(),
                 expected: Type::Number,
                 actual_lhs: lhs.get_type(),
                 actual_rhs: rhs.get_type(),
@@ -195,7 +195,7 @@ impl Interpreter {
                     Ok(Value::Number(-num))
                 } else {
                     Err(WrongType {
-                        operator: token.lexeme.clone(),
+                        operator: token.token_type.to_string(),
                         expected: Type::Number,
                         actual: right.get_type(),
                         src: token.src.clone(),
@@ -406,7 +406,6 @@ mod value_interpreter_tests {
     fn token(token_type: TokenType) -> Token {
         Token::new(
             token_type,
-            "",
             (0, 1).into(),
             NamedSource::new("name", String::new()).into(),
         )

@@ -105,6 +105,8 @@ impl Interpreter {
 #[cfg(test)]
 mod stmt_interpreter_tests {
 
+    use std::sync::Arc;
+
     use miette::NamedSource;
 
     use crate::{
@@ -170,9 +172,8 @@ mod stmt_interpreter_tests {
     fn token(token_type: TokenType) -> Token {
         Token::new(
             token_type,
-            "",
             (0, 1).into(),
-            NamedSource::new("name", String::new()).into(),
+            Arc::new(NamedSource::new("name", String::new())),
         )
     }
 
@@ -180,7 +181,7 @@ mod stmt_interpreter_tests {
         Stmt {
             stmt_type: StmtType::Block(stmts),
             location: (0, 1).into(),
-            src: NamedSource::new("name", String::new()).into(),
+            src: Arc::new(NamedSource::new("name", String::new())),
         }
     }
 
@@ -195,7 +196,7 @@ mod stmt_interpreter_tests {
                 initializer: None,
             },
             location: (0, 1).into(),
-            src: NamedSource::new("name", String::new()).into(),
+            src: Arc::new(NamedSource::new("name", String::new())),
         }
     }
 }

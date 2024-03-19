@@ -70,7 +70,6 @@ impl Scanner {
         }
         self.tokens.push(Token::new(
             TokenType::Eof,
-            String::new(),
             (self.current, 0).into(),
             self.named_source.clone(),
         ));
@@ -125,10 +124,8 @@ impl Scanner {
     }
 
     fn add_token(&mut self, token_type: TokenType) {
-        let text = self.source[self.start..self.current].to_string();
         self.tokens.push(Token::new(
             token_type,
-            text,
             (self.start, self.current - self.start).into(),
             self.named_source.clone(),
         ))
