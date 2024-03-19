@@ -227,7 +227,7 @@ mod test {
         let expr = parse_expr(tokens).unwrap();
         assert_eq!(
             expr.to_string().trim_end(),
-            r#"(EqualEqual (BangEqual ("foo") ("foo")) ("foo"))"#
+            r#"(== (!= ("foo") ("foo")) ("foo"))"#
         );
     }
 
@@ -239,7 +239,7 @@ mod test {
             token(TokenType::Eof),
         ];
         let expr = parse_expr(tokens).unwrap();
-        assert_eq!(expr.to_string().trim_end(), r#"(Minus (1))"#);
+        assert_eq!(expr.to_string().trim_end(), r#"(- (1))"#);
     }
 
     #[test]
@@ -255,7 +255,7 @@ mod test {
         let expr = parse_expr(tokens).unwrap();
         assert_eq!(
             expr.to_string().trim_end(),
-            "(Logical Or (false) (Logical And (false) (true)))"
+            "(Logical or (false) (Logical and (false) (true)))"
         );
     }
 
@@ -272,7 +272,7 @@ mod test {
         let expr = parse_expr(tokens).unwrap();
         assert_eq!(
             expr.to_string().trim_end(),
-            "(Logical And (Logical And (true) (true)) (false))"
+            "(Logical and (Logical and (true) (true)) (false))"
         );
     }
     #[test]

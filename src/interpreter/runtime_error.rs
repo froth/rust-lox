@@ -8,7 +8,9 @@ use super::value::Value;
 
 #[derive(thiserror::Error, Debug, Diagnostic)]
 pub enum RuntimeError {
-    #[error("Wrong operand type for operator {operator} : expected {expected} but got {actual}")]
+    #[error(
+        "Wrong operand type for operator \"{operator}\": expected {expected} but got {actual}"
+    )]
     #[diagnostic(help("Change operand to {expected}"))]
     WrongType {
         operator: String,
@@ -21,7 +23,7 @@ pub enum RuntimeError {
         #[label("{actual}")]
         operand_location: SourceSpan,
     },
-    #[error("Wrong operand types for operator {operator} : expected {expected} but got {actual_lhs} and {actual_rhs}")]
+    #[error("Wrong operand types for operator \"{operator}\": expected {expected} but got {actual_lhs} and {actual_rhs}")]
     #[diagnostic(help("Change operands to {expected}"))]
     WrongTypes {
         operator: String,
@@ -37,7 +39,7 @@ pub enum RuntimeError {
         #[label("{actual_rhs}")]
         rhs: SourceSpan,
     },
-    #[error("Wrong operand types for operator + : expected both String of both Number but got {actual_lhs} and {actual_rhs}")]
+    #[error("Wrong operand types for operator \"+\": expected both String of both Number but got {actual_lhs} and {actual_rhs}")]
     #[diagnostic(help("Change operands to be both String or Number"))]
     PlusOperatorWrongTypes {
         actual_lhs: Type,
