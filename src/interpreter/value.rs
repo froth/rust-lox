@@ -1,6 +1,6 @@
 use std::{cell::RefCell, fmt::Display, rc::Rc};
 
-use super::{callable::Callable, class::Instance, types::Type};
+use super::{callable::Callable, class::Instance, function::Function, types::Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
@@ -73,5 +73,11 @@ impl From<String> for Value {
 impl From<&str> for Value {
     fn from(value: &str) -> Self {
         Value::String(value.to_string())
+    }
+}
+
+impl From<Function> for Value {
+    fn from(value: Function) -> Self {
+        Value::Callable(Callable::Function(value))
     }
 }

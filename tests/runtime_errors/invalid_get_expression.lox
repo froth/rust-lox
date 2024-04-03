@@ -1,0 +1,22 @@
+error
+"".test;
+----
+----
+{
+  "causes": [],
+  "filename": "tests/runtime_errors/invalid_get_expression.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 7,
+        "offset": 0
+      }
+    }
+  ],
+  "message": "Only instances have properties. Actual type String",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

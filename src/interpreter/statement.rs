@@ -3,11 +3,11 @@ use std::{cell::RefCell, rc::Rc};
 use crate::ast::{
     expr::Expr,
     name::Name,
-    stmt::{Function, Stmt, StmtType},
+    stmt::{self, Stmt, StmtType},
 };
 
 use super::{
-    callable::Callable, class::Class, environment::Environment,
+    callable::Callable, class::Class, environment::Environment, function::Function,
     runtime_error::RuntimeErrorOrReturn, value::Value, Interpreter, OrReturnResult, Result,
 };
 
@@ -51,23 +51,37 @@ impl Interpreter {
     }
 
     fn define_function(&mut self, name: &Name, parameters: &[Name], body: &[Stmt]) -> Result<()> {
-        let function = Callable::Function {
-            name: name.clone(),
-            parameters: parameters.to_vec(),
-            body: body.to_vec(),
-            closure: self.environment.clone(),
-        };
+        let function = Function::new(
+            name.clone(),
+            parameters.to_vec(),
+            body.to_vec(),
+            self.environment.clone(),
+        );
         self.environment
             .borrow_mut()
-            .define(name, Value::Callable(function));
+            .define(name, Value::Callable(Callable::Function(function)));
         Ok(())
     }
 
-    fn define_class(&mut self, name: &Name, methods: &[Function]) -> Result<()> {
+    fn define_class(&mut self, name: &Name, methods: &[stmt::Function]) -> Result<()> {
         let mut env = self.environment.borrow_mut();
 
         env.define(name, Value::Nil);
-        let class = Callable::Class(Class { name: name.clone() });
+        let methods = methods
+            .iter()
+            .map(|m| {
+                (
+                    m.name.clone(),
+                    Function::new(
+                        m.name.clone(),
+                        m.parameters.clone(),
+                        m.body.clone(),
+                        self.environment.clone(),
+                    ),
+                )
+            })
+            .collect();
+        let class = Callable::Class(Class::new(name.clone(), methods));
         env.assign(name, &Value::Callable(class));
         Ok(())
     }
