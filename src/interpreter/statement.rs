@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::ast::{
     expr::Expr,
     name::Name,
-    stmt::{Stmt, StmtType::*},
+    stmt::{Function, Stmt, StmtType::*},
 };
 
 use super::{
@@ -36,7 +36,7 @@ impl Interpreter {
                 self.define_function(&function.name, &function.parameters, &function.body)?
             }
             Return(expr) => self.execute_return(expr)?,
-            Class { name, methods } => todo!(),
+            Class { name, methods } => self.define_class(name, methods)?,
         };
         Ok(())
     }
@@ -59,6 +59,15 @@ impl Interpreter {
         self.environment
             .borrow_mut()
             .define(name, Value::Callable(function));
+        Ok(())
+    }
+
+    fn define_class(&mut self, name: &Name, methods: &[Function]) -> Result<()> {
+        let mut env = self.environment.borrow_mut();
+
+        env.define(name, Value::Nil);
+        let class = Callable::Class { name: name.clone() };
+        env.assign(name, &Value::Callable(class));
         Ok(())
     }
 

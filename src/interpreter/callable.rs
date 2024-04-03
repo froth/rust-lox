@@ -18,6 +18,9 @@ pub enum Callable {
         body: Vec<Stmt>,
         closure: Rc<RefCell<Environment>>,
     },
+    Class {
+        name: Name,
+    },
 }
 
 impl Callable {
@@ -42,6 +45,9 @@ impl Callable {
                     Err(RuntimeErrorOrReturn::RuntimeError(err)) => Err(err),
                 }
             }
+            Class { name } => {
+                todo!()
+            }
         }
     }
 
@@ -52,6 +58,7 @@ impl Callable {
                 parameters: arguments,
                 ..
             } => arguments.len(),
+            Class { .. } => 0,
         }
     }
 }
@@ -68,7 +75,10 @@ impl Display for Callable {
                 ..
             } => {
                 let arity = arguments.len();
-                write!(f, "<fun {name} ({arity} arguments)>",)
+                write!(f, "<fun {name} ({arity} arguments)>")
+            }
+            Class { name } => {
+                write!(f, "<class {name}>")
             }
         }
     }
