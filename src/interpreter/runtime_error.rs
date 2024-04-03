@@ -81,6 +81,24 @@ pub enum RuntimeError {
         #[label("here")]
         location: SourceSpan,
     },
+
+    #[error("Only instances have properties. Actual type {actual}")]
+    ExpectedInstance {
+        actual: Type,
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
+
+    #[error("Undefined property {name}")]
+    UndefinedProperty {
+        name: Name,
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(Debug)]
