@@ -23,6 +23,12 @@ impl Parser {
             let value = self.assignment()?;
             if let ExprType::Variable(name_expr) = expr.expr_type {
                 return Ok(Expr::assign(name_expr, value));
+            } else if let ExprType::Get(object, name) = expr.expr_type {
+                return Ok(Expr {
+                    expr_type: ExprType::Set(object, name, Box::new(value)),
+                    location: expr.location,
+                    src: expr.src,
+                });
             }
             self.errors.push(InvalidAssignmentTarget {
                 src: expr.src.clone(),
@@ -404,5 +410,38 @@ mod test {
         ];
         let expr = parse_expr(tokens).unwrap();
         assert_eq!(expr.to_string().trim_end(), "(Call (variable name)=>())")
+    }
+
+    #[test]
+    fn get_expression() {
+        let object_name: String = "object".into();
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Identifier(object_name.clone())),
+            token(TokenType::Dot),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Eof),
+        ];
+        let expr = parse_expr(tokens).unwrap();
+        assert_eq!(expr.to_string().trim_end(), "(Get (variable object).name)")
+    }
+
+    #[test]
+    fn set() {
+        let object_name: String = "object".into();
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Identifier(object_name.clone())),
+            token(TokenType::Dot),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Equal),
+            token(TokenType::True),
+            token(TokenType::Eof),
+        ];
+        let expr = parse_expr(tokens).unwrap();
+        assert_eq!(
+            expr.to_string().trim_end(),
+            "(Set (variable object).name = (true))"
+        )
     }
 }

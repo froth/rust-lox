@@ -48,7 +48,9 @@ impl Callable {
                     Err(RuntimeErrorOrReturn::RuntimeError(err)) => Err(err),
                 }
             }
-            Class(class) => Ok(Value::Instance(Instance::new(class.clone()))),
+            Class(class) => Ok(Value::Instance(Rc::new(RefCell::new(Instance::new(
+                class.clone(),
+            ))))),
         }
     }
 

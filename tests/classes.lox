@@ -5,6 +5,12 @@ class Dog {
 print Dog;
 var leo = Dog();
 print leo;
+print leo.name = "Leo";
+leo.name = "Leo2";
+var leo2 = leo;
+print leo2.name;
 ----
 <class Dog>
 <Dog instance>
+Leo
+Leo2

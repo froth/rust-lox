@@ -137,6 +137,10 @@ impl Resolver {
                 arguments.iter().try_for_each(|e| self.resolve_expr(e))
             }
             Get(expr, _) => self.resolve_expr(expr),
+            Set(expr, _, object) => {
+                self.resolve_expr(expr)?;
+                self.resolve_expr(object)
+            }
         }
     }
 
