@@ -113,6 +113,7 @@ impl Display for Expr {
                 write!(f, "))")
             }
             Get(object, name) => write!(f, "(Get {}.{})", object, name.name),
+            Set(object, name, value) => write!(f, "(Set {}.{} = {})", object, name.name, value),
         }
     }
 }
@@ -128,6 +129,7 @@ pub enum ExprType {
     Variable(NameExpr),
     Call(Box<Expr>, Vec<Expr>),
     Get(Box<Expr>, NameExpr),
+    Set(Box<Expr>, NameExpr, Box<Expr>),
 }
 
 impl ExprType {
