@@ -1,6 +1,8 @@
 use std::vec;
 
-use crate::ast::stmt::Stmt;
+use miette::SourceSpan;
+
+use crate::ast::stmt::{Function, Stmt, StmtType};
 use crate::ast::token::{Token, TokenType};
 use crate::source_span_extensions::SourceSpanExtensions;
 
@@ -15,6 +17,7 @@ impl Parser {
         match self.peek().token_type {
             Var => self.var_declaration(),
             Fun => self.fun_declaration(),
+            Class => self.class_declaration(),
             _ => self.statement(),
         }
     }
@@ -46,6 +49,15 @@ impl Parser {
     }
 
     fn fun_declaration(&mut self) -> Result<Stmt> {
+        let (function, location) = self.function()?;
+        Ok(Stmt {
+            stmt_type: StmtType::Function(function),
+            location,
+            src: self.src.clone(),
+        })
+    }
+
+    fn function(&mut self) -> Result<(Function, SourceSpan)> {
         use TokenType::*;
         let fun_location = self.advance().location;
         let identifier = self.peek();
@@ -65,13 +77,50 @@ impl Parser {
 
             let body = self.block()?;
 
-            Ok(Stmt::function(
-                name,
-                parameters,
-                body.stmts,
+            Ok((
+                Function {
+                    name: name.into(),
+                    parameters: parameters.into_iter().map(|arg| arg.into()).collect(),
+                    body: body.stmts,
+                },
                 fun_location.until(body.location),
-                self.src.clone(),
             ))
+        } else {
+            Err(ExpectedIdentifier {
+                src: self.src.clone(),
+                location: identifier.location,
+            })
+        }
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt> {
+        use TokenType::*;
+        let class_location = self.advance().location;
+        let identifier = self.peek();
+        if let Identifier(name) = &identifier.token_type {
+            let name = name.clone();
+            self.advance();
+            consume!(self, LeftBrace, |t: &Token| {
+                ExpectedLeftBrace {
+                    src: t.src.clone(),
+                    location: self.previous_if_eof(t.location),
+                }
+            });
+
+            let mut methods = vec![];
+
+            while !check!(self, RightBrace) && !self.is_at_end() {
+                methods.push(self.function()?.0)
+            }
+
+            let right_brace = consume!(self, RightBrace, |t: &Token| {
+                ExpectedRightBrace {
+                    src: t.src.clone(),
+                    location: self.previous_if_eof(t.location),
+                }
+            });
+            let location = class_location.until(right_brace.location);
+            Ok(Stmt::class(name, methods, location, self.src.clone()))
         } else {
             Err(ExpectedIdentifier {
                 src: self.src.clone(),
@@ -195,6 +244,33 @@ mod test {
         assert_eq!(
             stmt.to_string().trim_end(),
             "fun name(a, b, ) {\nExpr(nil)\n}"
+        )
+    }
+
+    #[test]
+    fn parse_class_declaration() {
+        let class_name: String = "class_name".into();
+        let method_name: String = "method_name".into();
+
+        let tokens = vec![
+            token(TokenType::Class),
+            token(TokenType::Identifier(class_name)),
+            token(TokenType::LeftBrace),
+            token(TokenType::Fun),
+            token(TokenType::Identifier(method_name)),
+            token(TokenType::LeftParen),
+            token(TokenType::RightParen),
+            token(TokenType::LeftBrace),
+            token(TokenType::Nil),
+            token(TokenType::Semicolon),
+            token(TokenType::RightBrace),
+            token(TokenType::RightBrace),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_declaration(tokens).unwrap();
+        assert_eq!(
+            stmt.to_string().trim_end(),
+            "class class_name{\nfun method_name() {\nExpr(nil)\n}\n}"
         )
     }
 }

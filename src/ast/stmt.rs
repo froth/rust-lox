@@ -45,19 +45,17 @@ impl Stmt {
         }
     }
 
-    pub fn function(
+    pub fn class(
         name: String,
-        parameters: Vec<String>,
-        body: Vec<Stmt>,
+        methods: Vec<Function>,
         location: SourceSpan,
         src: Arc<NamedSource<String>>,
     ) -> Self {
         Stmt {
-            stmt_type: StmtType::Function(Function {
+            stmt_type: StmtType::Class {
                 name: name.into(),
-                parameters: parameters.into_iter().map(|arg| arg.into()).collect(),
-                body,
-            }),
+                methods,
+            },
             src,
             location,
         }
@@ -187,7 +185,7 @@ impl Display for Stmt {
             Return(None) => writeln!(f, "return"),
             Return(Some(expr)) => writeln!(f, "return {expr}"),
             Class { name, methods } => {
-                write!(f, "fun {}", name)?;
+                write!(f, "class {}", name)?;
                 writeln!(f, "{{")?;
                 methods.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
