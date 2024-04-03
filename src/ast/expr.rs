@@ -112,6 +112,7 @@ impl Display for Expr {
                     .try_for_each(|arg| write!(f, "{}, ", arg))?;
                 write!(f, "))")
             }
+            Get(object, name) => write!(f, "(Get {}.{})", object, name.name),
         }
     }
 }
@@ -126,6 +127,7 @@ pub enum ExprType {
     Unary(Token, Box<Expr>),
     Variable(NameExpr),
     Call(Box<Expr>, Vec<Expr>),
+    Get(Box<Expr>, NameExpr),
 }
 
 impl ExprType {

@@ -14,6 +14,7 @@ use super::{Interpreter, Result};
 impl Interpreter {
     pub fn interpret_expr(&mut self, expr: &Expr) -> Result<Value> {
         use ExprType::*;
+        let location = expr.location;
         match &expr.expr_type {
             Binary(left, token, right) => self.interpret_binary(left, token, right),
             Logical(left, token, right) => self.interpret_logical(left, token, right),
@@ -23,6 +24,24 @@ impl Interpreter {
             Variable(name) => self.read_variable(name, expr),
             Assign(name, expr) => self.assign_variable(name, expr),
             Call(callee, arguments) => self.call(callee, arguments, expr.location),
+            Get(object, name) => self.get(object, name, location),
+        }
+    }
+
+    fn get(&mut self, object: &Expr, name_expr: &NameExpr, location: SourceSpan) -> Result<Value> {
+        let value = self.interpret_expr(object)?;
+        if let Value::Instance(instance) = value {
+            instance.get(&name_expr.name).ok_or(UndefinedProperty {
+                name: name_expr.name.clone(),
+                src: name_expr.src.clone(),
+                location: name_expr.location,
+            })
+        } else {
+            Err(ExpectedInstance {
+                actual: value.get_type(),
+                src: object.src.clone(),
+                location,
+            })
         }
     }
 

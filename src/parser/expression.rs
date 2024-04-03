@@ -1,5 +1,6 @@
 use crate::ast::expr::Expr;
 use crate::ast::literal::Literal;
+use crate::ast::name::{Name, NameExpr};
 use crate::ast::token::Token;
 use crate::ast::{expr::ExprType, token::TokenType};
 use crate::parser::macros::{check, consume};
@@ -106,8 +107,37 @@ impl Parser {
     fn call(&mut self) -> Result<Expr> {
         use TokenType::*;
         let mut expr = self.primary()?;
-        while match_token!(self, LeftParen).is_some() {
-            expr = self.finish_call(expr)?;
+        loop {
+            if match_token!(self, LeftParen).is_some() {
+                expr = self.finish_call(expr)?;
+            } else if match_token!(self, Dot).is_some() {
+                let peek = self.peek();
+                if let Identifier(name) = &peek.token_type {
+                    let identifier_location = peek.location;
+                    let location = expr.location.until(identifier_location);
+                    let name: Name = name.clone().into();
+                    self.advance();
+                    expr = Expr {
+                        expr_type: ExprType::Get(
+                            Box::new(expr),
+                            NameExpr {
+                                name,
+                                location: identifier_location,
+                                src: self.src.clone(),
+                            },
+                        ),
+                        src: self.src.clone(),
+                        location,
+                    }
+                } else {
+                    return Err(ExpectedIdentifier {
+                        src: self.src.clone(),
+                        location: peek.location,
+                    });
+                }
+            } else {
+                break;
+            }
         }
         Ok(expr)
     }
