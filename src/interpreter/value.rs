@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
-use super::{callable::Callable, types::Type};
+use super::{callable::Callable, class::Instance, types::Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Callable(Callable),
+    Instance(Instance),
     String(String),
     Number(f64),
     Boolean(bool),
@@ -23,6 +24,7 @@ impl Value {
     pub fn get_type(&self) -> Type {
         match self {
             Value::Callable(_) => Type::Callable,
+            Value::Instance(_) => Type::Instance,
             Value::String(_) => Type::String,
             Value::Number(_) => Type::Number,
             Value::Boolean(_) => Type::Boolean,
@@ -35,6 +37,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Callable(c) => write!(f, "{}", c),
+            Value::Instance(instance) => write!(f, "{instance}"),
             Value::String(s) => write!(f, "{}", s),
             Value::Number(n) => write!(f, "{}", n),
             Value::Boolean(b) => write!(f, "{}", b),

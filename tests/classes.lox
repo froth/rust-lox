@@ -3,5 +3,8 @@ class Dog {
 
 }
 print Dog;
+var leo = Dog();
+print leo;
 ----
 <class Dog>
+<Dog instance>
