@@ -1,0 +1,7 @@
+interpret
+class Dog {
+
+}
+print Dog;
+----
+<class Dog>

@@ -73,7 +73,11 @@ impl Resolver {
                 self.resolve_expr(condition)?;
                 self.resolve_statement(body)
             }
-            Class { name, methods } => todo!(),
+            Class { name, methods: _ } => {
+                self.declare(name);
+                self.define(name);
+                Ok(())
+            }
         }
     }
 
