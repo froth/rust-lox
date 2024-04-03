@@ -44,14 +44,10 @@ impl Resolver {
             Expression(expr) => self.resolve_expr(expr),
             Print(expr) => self.resolve_expr(expr),
             Var { name, initializer } => self.resolve_var(name, initializer),
-            Function {
-                name,
-                parameters,
-                body,
-            } => {
-                self.declare(name);
-                self.define(name);
-                self.resolve_function(parameters, body, FunctionType::Function)
+            Function(function) => {
+                self.declare(&function.name);
+                self.define(&function.name);
+                self.resolve_function(&function.parameters, &function.body, FunctionType::Function)
             }
             Return(expr) => {
                 if self.current_function.is_none() {
@@ -77,6 +73,7 @@ impl Resolver {
                 self.resolve_expr(condition)?;
                 self.resolve_statement(body)
             }
+            Class { name, methods } => todo!(),
         }
     }
 

@@ -53,11 +53,11 @@ impl Stmt {
         src: Arc<NamedSource<String>>,
     ) -> Self {
         Stmt {
-            stmt_type: StmtType::Function {
+            stmt_type: StmtType::Function(Function {
                 name: name.into(),
                 parameters: parameters.into_iter().map(|arg| arg.into()).collect(),
                 body,
-            },
+            }),
             src,
             location,
         }
@@ -102,11 +102,7 @@ pub enum StmtType {
         name: Name,
         initializer: Option<Expr>,
     },
-    Function {
-        name: Name,
-        parameters: Vec<Name>,
-        body: Vec<Stmt>,
-    },
+    Function(Function),
     Return(Option<Expr>),
     Block(Vec<Stmt>),
     If {
@@ -118,6 +114,29 @@ pub enum StmtType {
         condition: Expr,
         body: Box<Stmt>,
     },
+    Class {
+        name: Name,
+        methods: Vec<Function>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Function {
+    pub name: Name,
+    pub parameters: Vec<Name>,
+    pub body: Vec<Stmt>,
+}
+
+impl Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "fun {}(", self.name)?;
+        self.parameters
+            .iter()
+            .try_for_each(|arg| write!(f, "{arg}, "))?;
+        writeln!(f, ") {{")?;
+        self.body.iter().try_for_each(|s| write!(f, "{}", s))?;
+        writeln!(f, "}}")
+    }
 }
 
 impl Display for Stmt {
@@ -164,19 +183,15 @@ impl Display for Stmt {
                 write!(f, "{}", body)?;
                 writeln!(f, "}}")
             }
-            Function {
-                name,
-                parameters: arguments,
-                body,
-            } => {
-                write!(f, "fun {name}(")?;
-                arguments.iter().try_for_each(|arg| write!(f, "{arg}, "))?;
-                writeln!(f, ") {{")?;
-                body.iter().try_for_each(|s| write!(f, "{}", s))?;
-                writeln!(f, "}}")
-            }
+            Function(function) => write!(f, "{function}"),
             Return(None) => writeln!(f, "return"),
             Return(Some(expr)) => writeln!(f, "return {expr}"),
+            Class { name, methods } => {
+                write!(f, "fun {}", name)?;
+                writeln!(f, "{{")?;
+                methods.iter().try_for_each(|s| write!(f, "{}", s))?;
+                writeln!(f, "}}")
+            }
         }
     }
 }

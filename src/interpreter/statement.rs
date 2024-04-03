@@ -32,12 +32,11 @@ impl Interpreter {
                 else_stmt,
             } => self.execute_if(condition, then_stmt, else_stmt)?,
             While { condition, body } => self.execute_while(condition, body.as_ref())?,
-            Function {
-                name,
-                parameters,
-                body,
-            } => self.define_function(name, parameters, body)?,
+            Function(function) => {
+                self.define_function(&function.name, &function.parameters, &function.body)?
+            }
             Return(expr) => self.execute_return(expr)?,
+            Class { name, methods } => todo!(),
         };
         Ok(())
     }
