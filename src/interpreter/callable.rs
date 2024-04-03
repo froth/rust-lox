@@ -4,7 +4,12 @@ use std::{cell::RefCell, rc::Rc};
 use crate::ast::{name::Name, stmt::Stmt};
 
 use self::Callable::*;
-use super::{environment::Environment, value::Value, Interpreter, Result, RuntimeErrorOrReturn};
+use super::{
+    class::{Class, Instance},
+    environment::Environment,
+    value::Value,
+    Interpreter, Result, RuntimeErrorOrReturn,
+};
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {
     Native {
@@ -18,9 +23,7 @@ pub enum Callable {
         body: Vec<Stmt>,
         closure: Rc<RefCell<Environment>>,
     },
-    Class {
-        name: Name,
-    },
+    Class(Class),
 }
 
 impl Callable {
@@ -45,9 +48,7 @@ impl Callable {
                     Err(RuntimeErrorOrReturn::RuntimeError(err)) => Err(err),
                 }
             }
-            Class { name } => {
-                todo!()
-            }
+            Class(class) => Ok(Value::Instance(Instance::new(class.clone()))),
         }
     }
 
@@ -58,7 +59,7 @@ impl Callable {
                 parameters: arguments,
                 ..
             } => arguments.len(),
-            Class { .. } => 0,
+            Class(_) => 0,
         }
     }
 }
@@ -77,8 +78,8 @@ impl Display for Callable {
                 let arity = arguments.len();
                 write!(f, "<fun {name} ({arity} arguments)>")
             }
-            Class { name } => {
-                write!(f, "<class {name}>")
+            Class(class) => {
+                write!(f, "<class {}>", class.name)
             }
         }
     }

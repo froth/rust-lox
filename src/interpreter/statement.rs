@@ -3,16 +3,17 @@ use std::{cell::RefCell, rc::Rc};
 use crate::ast::{
     expr::Expr,
     name::Name,
-    stmt::{Function, Stmt, StmtType::*},
+    stmt::{Function, Stmt, StmtType},
 };
 
 use super::{
-    callable::Callable, environment::Environment, runtime_error::RuntimeErrorOrReturn,
-    value::Value, Interpreter, OrReturnResult, Result,
+    callable::Callable, class::Class, environment::Environment,
+    runtime_error::RuntimeErrorOrReturn, value::Value, Interpreter, OrReturnResult, Result,
 };
 
 impl Interpreter {
     pub(super) fn interpret_stmt(&mut self, statement: &Stmt) -> OrReturnResult<()> {
+        use StmtType::*;
         match &statement.stmt_type {
             Expression(expr) => self.interpret_expr(expr).map(|_| ())?,
             Print(expr) => self
@@ -66,7 +67,7 @@ impl Interpreter {
         let mut env = self.environment.borrow_mut();
 
         env.define(name, Value::Nil);
-        let class = Callable::Class { name: name.clone() };
+        let class = Callable::Class(Class { name: name.clone() });
         env.assign(name, &Value::Callable(class));
         Ok(())
     }
