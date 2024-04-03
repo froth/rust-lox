@@ -2,6 +2,7 @@ mod callable;
 mod class;
 mod environment;
 mod expression;
+mod function;
 mod literal;
 mod native_functions;
 pub mod printer;

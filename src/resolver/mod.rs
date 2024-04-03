@@ -4,7 +4,7 @@ pub mod resolution_error;
 use crate::ast::{
     expr::{Expr, ExprType::*},
     name::{Name, NameExpr},
-    stmt::{Stmt, StmtType::*},
+    stmt::{Function, Stmt, StmtType::*},
 };
 
 use self::resolution_error::ResolutionError;
@@ -19,6 +19,7 @@ pub struct Resolver {
 #[derive(Debug)]
 enum FunctionType {
     Function,
+    Method,
 }
 
 type Result<T> = std::result::Result<T, ResolutionError>;
@@ -73,11 +74,7 @@ impl Resolver {
                 self.resolve_expr(condition)?;
                 self.resolve_statement(body)
             }
-            Class { name, methods: _ } => {
-                self.declare(name);
-                self.define(name);
-                Ok(())
-            }
+            Class { name, methods } => self.resolve_class(name, methods),
         }
     }
 
@@ -110,6 +107,15 @@ impl Resolver {
         self.declare(name);
         initializer.iter().try_for_each(|e| self.resolve_expr(e))?;
         self.define(name);
+        Ok(())
+    }
+
+    fn resolve_class(&mut self, name: &Name, methods: &[Function]) -> Result<()> {
+        self.declare(name);
+        self.define(name);
+        methods.iter().try_for_each(|m| {
+            self.resolve_function(&m.parameters, &m.body, FunctionType::Method)
+        })?;
         Ok(())
     }
 

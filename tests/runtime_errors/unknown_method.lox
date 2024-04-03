@@ -1,0 +1,24 @@
+error
+class A {}
+var a = A();
+a.property_name();
+----
+----
+{
+  "causes": [],
+  "filename": "tests/runtime_errors/unknown_method.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 13,
+        "offset": 26
+      }
+    }
+  ],
+  "message": "Undefined property property_name",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

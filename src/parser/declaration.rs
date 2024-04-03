@@ -49,7 +49,8 @@ impl Parser {
     }
 
     fn fun_declaration(&mut self) -> Result<Stmt> {
-        let (function, location) = self.function()?;
+        let fun_location = self.advance().location;
+        let (function, location) = self.function(fun_location)?;
         Ok(Stmt {
             stmt_type: StmtType::Function(function),
             location,
@@ -57,9 +58,8 @@ impl Parser {
         })
     }
 
-    fn function(&mut self) -> Result<(Function, SourceSpan)> {
+    fn function(&mut self, start_location: SourceSpan) -> Result<(Function, SourceSpan)> {
         use TokenType::*;
-        let fun_location = self.advance().location;
         let identifier = self.peek();
         if let Identifier(name) = &identifier.token_type {
             let name = name.clone();
@@ -83,7 +83,7 @@ impl Parser {
                     parameters: parameters.into_iter().map(|arg| arg.into()).collect(),
                     body: body.stmts,
                 },
-                fun_location.until(body.location),
+                start_location.until(body.location),
             ))
         } else {
             Err(ExpectedIdentifier {
@@ -110,7 +110,7 @@ impl Parser {
             let mut methods = vec![];
 
             while !check!(self, RightBrace) && !self.is_at_end() {
-                methods.push(self.function()?.0)
+                methods.push(self.function(self.peek().location)?.0)
             }
 
             let right_brace = consume!(self, RightBrace, |t: &Token| {
@@ -256,7 +256,6 @@ mod test {
             token(TokenType::Class),
             token(TokenType::Identifier(class_name)),
             token(TokenType::LeftBrace),
-            token(TokenType::Fun),
             token(TokenType::Identifier(method_name)),
             token(TokenType::LeftParen),
             token(TokenType::RightParen),
