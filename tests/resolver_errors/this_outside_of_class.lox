@@ -1,0 +1,22 @@
+error
+this;
+----
+----
+{
+  "causes": [],
+  "filename": "tests/resolver_errors/this_outside_of_class.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 4,
+        "offset": 0
+      }
+    }
+  ],
+  "message": "Can't use 'this' outside of a class.",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

@@ -53,6 +53,8 @@ impl Lox {
                         eprintln!("No statement found. Fallback to expression:");
                         eprintln!("{}", expr);
                     }
+                    let locals = Resolver::resolve_expression(expr, self.verbose)?;
+                    self.interpreter.add_locals(locals);
                     let result = self.interpreter.interpret_expr(expr)?;
                     Ok(Some(result))
                 }
