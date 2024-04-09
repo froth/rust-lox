@@ -1,0 +1,15 @@
+interpret
+class Thing {
+    getCallback() {
+        fun local() {
+            print this.name;
+        }
+        return local;
+    }
+}
+var thing = Thing();
+var callback = thing.getCallback();
+thing.name = "my_thing";
+callback();
+----
+my_thing

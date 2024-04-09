@@ -1,5 +1,4 @@
 use core::fmt::Display;
-use std::{cell::RefCell, rc::Rc};
 
 use self::Callable::*;
 use super::{
@@ -24,9 +23,7 @@ impl Callable {
         match self {
             Native { function, .. } => function(interpreter, arguments),
             Function(function) => function.call(interpreter, arguments),
-            Class(class) => Ok(Value::Instance(Rc::new(RefCell::new(Instance::new(
-                class.clone(),
-            ))))),
+            Class(class) => Ok(Value::Instance(Instance::new(class.clone()))),
         }
     }
 

@@ -1,11 +1,11 @@
-use std::{cell::RefCell, fmt::Display, rc::Rc};
+use std::fmt::Display;
 
 use super::{callable::Callable, class::Instance, function::Function, types::Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Value {
     Callable(Callable),
-    Instance(Rc<RefCell<Instance>>),
+    Instance(Instance),
     String(String),
     Number(f64),
     Boolean(bool),
@@ -37,7 +37,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Value::Callable(c) => write!(f, "{}", c),
-            Value::Instance(instance) => write!(f, "{}", instance.borrow()),
+            Value::Instance(instance) => write!(f, "{}", instance),
             Value::String(s) => write!(f, "{}", s),
             Value::Number(n) => write!(f, "{}", n),
             Value::Boolean(b) => write!(f, "{}", b),

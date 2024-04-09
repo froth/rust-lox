@@ -1,5 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 pub mod resolution_error;
+
+use miette::{NamedSource, SourceSpan};
 
 use crate::ast::{
     expr::{Expr, ExprType::*},
@@ -113,9 +115,13 @@ impl Resolver {
     fn resolve_class(&mut self, name: &Name, methods: &[Function]) -> Result<()> {
         self.declare(name);
         self.define(name);
+        self.begin_scope();
+
+        self.define(&Name::this());
         methods.iter().try_for_each(|m| {
             self.resolve_function(&m.parameters, &m.body, FunctionType::Method)
         })?;
+        self.end_scope();
         Ok(())
     }
 
@@ -147,6 +153,7 @@ impl Resolver {
                 self.resolve_expr(expr)?;
                 self.resolve_expr(object)
             }
+            This => self.resolve_this(expression.location, &expression.src),
         }
     }
 
@@ -161,6 +168,12 @@ impl Resolver {
             self.resolve_local(name_expr);
             Ok(())
         }
+    }
+
+    fn resolve_this(&mut self, location: SourceSpan, src: &Arc<NamedSource<String>>) -> Result<()> {
+        let name_expr = NameExpr::this(location, src.clone());
+        self.resolve_local(&name_expr);
+        Ok(())
     }
 
     fn declare(&mut self, name: &Name) {

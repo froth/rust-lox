@@ -3,8 +3,8 @@ use std::{cell::RefCell, fmt::Display, rc::Rc};
 use crate::ast::{name::Name, stmt::Stmt};
 
 use super::{
-    environment::Environment, runtime_error::RuntimeErrorOrReturn, value::Value, Interpreter,
-    Result,
+    class::Instance, environment::Environment, runtime_error::RuntimeErrorOrReturn, value::Value,
+    Interpreter, Result,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,6 +46,18 @@ impl Function {
 
     pub fn arity(&self) -> usize {
         self.parameters.len()
+    }
+
+    pub fn bind(self, instance: &Instance) -> Self {
+        let mut env = Environment::from_parent(self.closure.clone());
+        env.define(&Name::this(), Value::Instance(instance.clone()));
+        //TODO: ahhhh, instances are not clonable
+        Self {
+            name: self.name,
+            parameters: self.parameters,
+            body: self.body,
+            closure: Rc::new(RefCell::new(env)),
+        }
     }
 }
 

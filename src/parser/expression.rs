@@ -203,6 +203,11 @@ impl Parser {
                 let location = token.location.until(right_paren.location);
                 Expr::new(ExprType::grouping(expr), location, token.src)
             }
+            This => Expr {
+                expr_type: ExprType::This,
+                location: token.location,
+                src: self.src.clone(),
+            },
             Eof => Err(UnexpectedEof {
                 src: token.src.clone(),
                 location: (

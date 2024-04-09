@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::ast::name::Name;
 
@@ -7,26 +7,26 @@ use super::{function::Function, value::Value};
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instance {
     class: Class, // TODO: reference or RC?
-    fields: HashMap<Name, Value>,
+    fields: Rc<RefCell<HashMap<Name, Value>>>,
 }
 
 impl Instance {
     pub fn new(class: Class) -> Self {
         Self {
             class,
-            fields: HashMap::new(),
+            fields: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn get(&self, name: &Name) -> Option<Value> {
-        self.fields
-            .get(name)
-            .cloned()
-            .or(self.class.find_method(name))
+        self.fields.borrow().get(name).cloned().or(self
+            .class
+            .find_method(name)
+            .map(|method| method.bind(self).into()))
     }
 
-    pub fn set(&mut self, name: &Name, value: Value) {
-        self.fields.insert(name.clone(), value);
+    pub fn set(&self, name: &Name, value: Value) {
+        self.fields.borrow_mut().insert(name.clone(), value);
     }
 }
 
@@ -47,8 +47,8 @@ impl Class {
         Self { name, methods }
     }
 
-    pub fn find_method(&self, name: &Name) -> Option<Value> {
-        self.methods.get(name).cloned().map(|m| m.into())
+    pub fn find_method(&self, name: &Name) -> Option<Function> {
+        self.methods.get(name).cloned()
     }
 }
 
