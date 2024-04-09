@@ -16,6 +16,7 @@ pub struct Resolver {
     locals: HashMap<NameExpr, usize>,
     scopes: Vec<HashMap<Name, bool>>,
     current_function: Option<FunctionType>,
+    current_class: Option<ClassType>,
 }
 
 #[derive(Debug)]
@@ -24,12 +25,29 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Debug)]
+enum ClassType {
+    Class,
+}
+
 type Result<T> = std::result::Result<T, ResolutionError>;
 
 impl Resolver {
     pub fn resolve(statements: &[Stmt], verbose: bool) -> Result<HashMap<NameExpr, usize>> {
         let mut resolver = Resolver::default();
         resolver.resolve_statements(statements)?;
+        if verbose {
+            eprintln!("{:?}", resolver.locals);
+        }
+        Ok(resolver.locals)
+    }
+
+    pub fn resolve_expression(
+        expression: &Expr,
+        verbose: bool,
+    ) -> Result<HashMap<NameExpr, usize>> {
+        let mut resolver = Resolver::default();
+        resolver.resolve_expr(expression)?;
         if verbose {
             eprintln!("{:?}", resolver.locals);
         }
@@ -113,6 +131,7 @@ impl Resolver {
     }
 
     fn resolve_class(&mut self, name: &Name, methods: &[Function]) -> Result<()> {
+        let enclosing_class = std::mem::replace(&mut self.current_class, Some(ClassType::Class));
         self.declare(name);
         self.define(name);
         self.begin_scope();
@@ -122,6 +141,7 @@ impl Resolver {
             self.resolve_function(&m.parameters, &m.body, FunctionType::Method)
         })?;
         self.end_scope();
+        self.current_class = enclosing_class;
         Ok(())
     }
 
@@ -171,9 +191,16 @@ impl Resolver {
     }
 
     fn resolve_this(&mut self, location: SourceSpan, src: &Arc<NamedSource<String>>) -> Result<()> {
-        let name_expr = NameExpr::this(location, src.clone());
-        self.resolve_local(&name_expr);
-        Ok(())
+        if self.current_class.is_none() {
+            Err(ResolutionError::InvalidThis {
+                src: src.clone(),
+                location,
+            })
+        } else {
+            let name_expr = NameExpr::this(location, src.clone());
+            self.resolve_local(&name_expr);
+            Ok(())
+        }
     }
 
     fn declare(&mut self, name: &Name) {
