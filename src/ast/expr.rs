@@ -114,6 +114,7 @@ impl Display for Expr {
             }
             Get(object, name) => write!(f, "(Get {}.{})", object, name.name),
             Set(object, name, value) => write!(f, "(Set {}.{} = {})", object, name.name, value),
+            This => write!(f, "this"),
         }
     }
 }
@@ -130,6 +131,7 @@ pub enum ExprType {
     Call(Box<Expr>, Vec<Expr>),
     Get(Box<Expr>, NameExpr),
     Set(Box<Expr>, NameExpr, Box<Expr>),
+    This,
 }
 
 impl ExprType {
@@ -155,7 +157,7 @@ impl ExprType {
 
     pub fn variable(name: String, src: Arc<NamedSource<String>>, location: SourceSpan) -> ExprType {
         Self::Variable(NameExpr {
-            name: Name(name),
+            name: Name::new(name),
             location,
             src: src.clone(),
         })

@@ -26,20 +26,18 @@ impl Interpreter {
             Call(callee, arguments) => self.call(callee, arguments, expr.location),
             Get(object, name) => self.get(object, name, location),
             Set(object, name, value) => self.set(object, name, value, location),
+            This => self.read_variable(&NameExpr::this(location, expr.src.clone()), expr),
         }
     }
 
     fn get(&mut self, object: &Expr, name_expr: &NameExpr, location: SourceSpan) -> Result<Value> {
         let object = self.interpret_expr(object)?;
         if let Value::Instance(instance) = object {
-            instance
-                .borrow()
-                .get(&name_expr.name)
-                .ok_or(UndefinedProperty {
-                    name: name_expr.name.clone(),
-                    src: name_expr.src.clone(),
-                    location: name_expr.location,
-                })
+            instance.get(&name_expr.name).ok_or(UndefinedProperty {
+                name: name_expr.name.clone(),
+                src: name_expr.src.clone(),
+                location: name_expr.location,
+            })
         } else {
             Err(ExpectedInstance {
                 actual: object.get_type(),
@@ -59,7 +57,7 @@ impl Interpreter {
         let object = self.interpret_expr(object)?;
         if let Value::Instance(instance) = object {
             let value = self.interpret_expr(value)?;
-            instance.borrow_mut().set(&name_expr.name, value.clone());
+            instance.set(&name_expr.name, value.clone());
             Ok(value)
         } else {
             Err(ExpectedInstance {
