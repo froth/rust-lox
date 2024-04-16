@@ -1,14 +1,37 @@
-use std::{collections::HashMap, time::SystemTime};
+use std::{collections::HashMap, fmt::Display, time::SystemTime};
 
 use crate::ast::name::Name;
 
-use super::{callable::Callable, value::Value, Interpreter, Result};
+use super::{value::Value, Interpreter, Result};
 
-pub fn native_functions() -> HashMap<Name, Callable> {
+#[derive(Debug, Clone, PartialEq)]
+pub struct Native {
+    pub function: fn(interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value>,
+    arity: usize,
+    name: String,
+}
+
+impl Native {
+    pub fn arity(&self) -> usize {
+        self.arity
+    }
+
+    pub fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
+        (self.function)(interpreter, arguments)
+    }
+}
+
+impl Display for Native {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "<native fun {} ({} arguments)>", self.name, self.arity)
+    }
+}
+
+pub fn native_functions() -> HashMap<Name, Native> {
     let mut builtins = HashMap::new();
     builtins.insert(
         "clock".into(),
-        Callable::Native {
+        Native {
             function: clock,
             arity: 0,
             name: "clock".to_string(),

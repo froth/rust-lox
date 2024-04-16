@@ -2,18 +2,11 @@ use core::fmt::Display;
 
 use self::Callable::*;
 use super::{
-    class::{Class, Instance},
-    function::Function,
-    value::Value,
-    Interpreter, Result,
+    class::Class, function::Function, native_functions::Native, value::Value, Interpreter, Result,
 };
 #[derive(Debug, Clone, PartialEq)]
 pub enum Callable {
-    Native {
-        function: fn(interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value>,
-        arity: usize,
-        name: String,
-    },
+    Native(Native),
     Function(Function),
     Class(Class),
 }
@@ -21,17 +14,17 @@ pub enum Callable {
 impl Callable {
     pub fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
         match self {
-            Native { function, .. } => function(interpreter, arguments),
+            Native(native) => native.call(interpreter, arguments),
             Function(function) => function.call(interpreter, arguments),
-            Class(class) => Ok(Value::Instance(Instance::new(class.clone()))),
+            Class(class) => Ok(class.call(arguments)),
         }
     }
 
     pub fn arity(&self) -> usize {
         match self {
-            Native { arity, .. } => *arity,
+            Native(native) => native.arity(),
             Function(function) => function.arity(),
-            Class(_) => 0,
+            Class(class) => class.arity(),
         }
     }
 }
@@ -39,9 +32,7 @@ impl Callable {
 impl Display for Callable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Native { name, arity, .. } => {
-                write!(f, "<native fun {name} ({arity} arguments)>",)
-            }
+            Native(native) => native.fmt(f),
             Function(function) => function.fmt(f),
             Class(class) => class.fmt(f),
         }

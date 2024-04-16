@@ -50,6 +50,14 @@ impl Class {
     pub fn find_method(&self, name: &Name) -> Option<Function> {
         self.methods.get(name).cloned()
     }
+
+    pub fn call(&self, arguments: Vec<Value>) -> Value {
+        Value::Instance(Instance::new(self.clone()))
+    }
+
+    pub fn arity(&self) -> usize {
+        0
+    }
 }
 
 impl Display for Class {

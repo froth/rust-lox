@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::ast::name::Name;
 
-use super::{native_functions::native_functions, value::Value};
+use super::{callable::Callable, native_functions::native_functions, value::Value};
 
 #[derive(Debug, PartialEq)]
 pub struct Environment {
@@ -29,7 +29,7 @@ impl Environment {
         let mut env = Self::new();
         native_functions()
             .into_iter()
-            .for_each(|(k, v)| env.define(&k, Value::Callable(v)));
+            .for_each(|(k, v)| env.define(&k, Value::Callable(Callable::Native(v))));
         env
     }
 
