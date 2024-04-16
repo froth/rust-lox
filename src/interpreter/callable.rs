@@ -16,7 +16,7 @@ impl Callable {
         match self {
             Native(native) => native.call(interpreter, arguments),
             Function(function) => function.call(interpreter, arguments),
-            Class(class) => Ok(class.call(arguments)),
+            Class(class) => class.call(interpreter, arguments),
         }
     }
 
