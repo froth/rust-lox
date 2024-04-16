@@ -19,9 +19,10 @@ pub struct Resolver {
     current_class: Option<ClassType>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum FunctionType {
     Function,
+    Initializer,
     Method,
 }
 
@@ -70,16 +71,7 @@ impl Resolver {
                 self.define(&function.name);
                 self.resolve_function(&function.parameters, &function.body, FunctionType::Function)
             }
-            Return(expr) => {
-                if self.current_function.is_none() {
-                    Err(ResolutionError::InvalidReturn {
-                        src: statement.src.clone(),
-                        location: statement.location,
-                    })
-                } else {
-                    expr.iter().try_for_each(|e| self.resolve_expr(e))
-                }
-            }
+            Return(expr) => self.resolve_return(expr, statement.location, &statement.src),
             Block(statements) => self.resolve_block(statements),
             If {
                 condition,
@@ -138,7 +130,12 @@ impl Resolver {
 
         self.define(&Name::this());
         methods.iter().try_for_each(|m| {
-            self.resolve_function(&m.parameters, &m.body, FunctionType::Method)
+            let function_type = if m.name == Name::init() {
+                FunctionType::Initializer
+            } else {
+                FunctionType::Method
+            };
+            self.resolve_function(&m.parameters, &m.body, function_type)
         })?;
         self.end_scope();
         self.current_class = enclosing_class;
@@ -203,6 +200,34 @@ impl Resolver {
         }
     }
 
+    fn resolve_return(
+        &mut self,
+        expr: &Option<Expr>,
+        location: SourceSpan,
+        src: &Arc<NamedSource<String>>,
+    ) -> Result<()> {
+        if self.current_function.is_none() {
+            Err(ResolutionError::InvalidReturn {
+                src: src.clone(),
+                location,
+            })
+        } else {
+            expr.iter().try_for_each(|e| {
+                if self
+                    .current_function
+                    .as_ref()
+                    .is_some_and(|c| *c == FunctionType::Initializer)
+                {
+                    Err(ResolutionError::ReturnInInitializer {
+                        src: src.clone(),
+                        location,
+                    })
+                } else {
+                    self.resolve_expr(e)
+                }
+            })
+        }
+    }
     fn declare(&mut self, name: &Name) {
         if let Some(scope) = self.scopes.last_mut() {
             scope.insert(name.clone(), false);

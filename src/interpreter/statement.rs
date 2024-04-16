@@ -56,6 +56,7 @@ impl Interpreter {
             parameters.to_vec(),
             body.to_vec(),
             self.environment.clone(),
+            false,
         );
         self.environment
             .borrow_mut()
@@ -77,6 +78,7 @@ impl Interpreter {
                         m.parameters.clone(),
                         m.body.clone(),
                         self.environment.clone(),
+                        m.name == Name::init(),
                     ),
                 )
             })

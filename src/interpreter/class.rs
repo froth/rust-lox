@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc};
 
 use crate::ast::name::Name;
 
-use super::{function::Function, value::Value};
+use super::{function::Function, value::Value, Interpreter, Result};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Instance {
@@ -49,6 +49,20 @@ impl Class {
 
     pub fn find_method(&self, name: &Name) -> Option<Function> {
         self.methods.get(name).cloned()
+    }
+
+    pub fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {
+        let instance = Instance::new(self.clone());
+        self.find_method(&Name::init())
+            .map(|i| i.bind(&instance).call(interpreter, arguments))
+            .transpose()?;
+        Ok(Value::Instance(instance))
+    }
+
+    pub fn arity(&self) -> usize {
+        self.find_method(&Name::init())
+            .map(|m| m.arity())
+            .unwrap_or(0)
     }
 }
 

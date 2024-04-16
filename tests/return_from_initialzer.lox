@@ -1,0 +1,13 @@
+interpret
+class A {
+    init(a,b) {
+        if(a) {
+            return;
+        }
+        this.z = b;
+    }
+}
+var x = A(false, 1);
+print(x.init(true, 2).z); 
+----
+1

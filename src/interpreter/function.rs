@@ -13,6 +13,7 @@ pub struct Function {
     parameters: Vec<Name>,
     body: Vec<Stmt>,
     closure: Rc<RefCell<Environment>>,
+    is_initializer: bool,
 }
 
 impl Function {
@@ -21,12 +22,14 @@ impl Function {
         parameters: Vec<Name>,
         body: Vec<Stmt>,
         closure: Rc<RefCell<Environment>>,
+        is_initializer: bool,
     ) -> Self {
         Self {
             name,
             parameters,
             body,
             closure,
+            is_initializer,
         }
     }
 
@@ -38,7 +41,17 @@ impl Function {
             .for_each(|(p, a)| env.define(p, a.clone()));
         let result = interpreter.execute_block(&self.body, env);
         match result {
+            Ok(_) if self.is_initializer => Ok(self
+                .closure
+                .borrow()
+                .get_at(0, &Name::this())
+                .unwrap_or(Value::Nil)),
             Ok(_) => Ok(Value::Nil),
+            Err(RuntimeErrorOrReturn::Return(_)) if self.is_initializer => Ok(self
+                .closure
+                .borrow()
+                .get_at(0, &Name::this())
+                .unwrap_or(Value::Nil)),
             Err(RuntimeErrorOrReturn::Return(value)) => Ok(value),
             Err(RuntimeErrorOrReturn::RuntimeError(err)) => Err(err),
         }
@@ -57,6 +70,7 @@ impl Function {
             parameters: self.parameters,
             body: self.body,
             closure: Rc::new(RefCell::new(env)),
+            is_initializer: self.is_initializer,
         }
     }
 }

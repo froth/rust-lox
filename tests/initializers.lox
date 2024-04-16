@@ -1,0 +1,19 @@
+interpret
+class A {
+    init(a,b) {
+        this.c = a;
+        this.d = b;
+    }
+
+    print_me(s) {
+        print(s);
+        print(this.c);
+        print(this.d);
+    }
+}
+var x = A(1, false);
+x.print_me("s");
+----
+s
+1
+false

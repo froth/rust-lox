@@ -23,7 +23,7 @@ impl NameExpr {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Name(String);
-
+const INIT: &str = "init";
 impl Name {
     pub fn new(name: String) -> Self {
         Name(name)
@@ -31,6 +31,10 @@ impl Name {
 
     pub fn this() -> Self {
         Name(TokenType::This.to_string())
+    }
+
+    pub fn init() -> Self {
+        Name(String::from(INIT))
     }
 }
 

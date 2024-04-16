@@ -1,0 +1,10 @@
+interpret
+class A {
+    init(a) {
+        this.a = a;
+    }
+}
+var a = A(1);
+print(a.init(5).a);
+----
+5

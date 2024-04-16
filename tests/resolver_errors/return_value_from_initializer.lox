@@ -1,0 +1,26 @@
+error
+class A {
+    init() {
+        return 0;
+    }
+}
+----
+----
+{
+  "causes": [],
+  "filename": "tests/resolver_errors/return_value_from_initializer.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 9,
+        "offset": 31
+      }
+    }
+  ],
+  "message": "Can't return a value from initializer",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)
