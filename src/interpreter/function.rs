@@ -47,6 +47,11 @@ impl Function {
                 .get_at(0, &Name::this())
                 .unwrap_or(Value::Nil)),
             Ok(_) => Ok(Value::Nil),
+            Err(RuntimeErrorOrReturn::Return(_)) if self.is_initializer => Ok(self
+                .closure
+                .borrow()
+                .get_at(0, &Name::this())
+                .unwrap_or(Value::Nil)),
             Err(RuntimeErrorOrReturn::Return(value)) => Ok(value),
             Err(RuntimeErrorOrReturn::RuntimeError(err)) => Err(err),
         }

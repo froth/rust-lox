@@ -21,6 +21,13 @@ pub enum ResolutionError {
         #[label("here")]
         location: SourceSpan,
     },
+    #[error("Can't return a value from initializer")]
+    ReturnInInitializer {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
     #[error("Can't use 'this' outside of a class.")]
     InvalidThis {
         #[source_code]
