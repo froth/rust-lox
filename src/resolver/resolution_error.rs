@@ -35,4 +35,11 @@ pub enum ResolutionError {
         #[label("here")]
         location: SourceSpan,
     },
+    #[error("A class can't inherit from itself")]
+    SelfInheritance {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
 }

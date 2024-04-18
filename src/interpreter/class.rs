@@ -39,16 +39,24 @@ impl Display for Instance {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Class {
     name: Name,
+    superclass: Option<Box<Class>>,
     methods: HashMap<Name, Function>,
 }
 
 impl Class {
-    pub fn new(name: Name, methods: HashMap<Name, Function>) -> Self {
-        Self { name, methods }
+    pub fn new(name: Name, superclass: Option<Class>, methods: HashMap<Name, Function>) -> Self {
+        Self {
+            name,
+            superclass: superclass.map(Box::new),
+            methods,
+        }
     }
 
     pub fn find_method(&self, name: &Name) -> Option<Function> {
-        self.methods.get(name).cloned()
+        self.methods
+            .get(name)
+            .cloned()
+            .or(self.superclass.as_ref().and_then(|s| s.find_method(name)))
     }
 
     pub fn call(&self, interpreter: &mut Interpreter, arguments: Vec<Value>) -> Result<Value> {

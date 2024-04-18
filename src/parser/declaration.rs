@@ -2,6 +2,7 @@ use std::vec;
 
 use miette::SourceSpan;
 
+use crate::ast::name::{Name, NameExpr};
 use crate::ast::stmt::{Function, Stmt, StmtType};
 use crate::ast::token::{Token, TokenType};
 use crate::source_span_extensions::SourceSpanExtensions;
@@ -100,6 +101,25 @@ impl Parser {
         if let Identifier(name) = &identifier.token_type {
             let name = name.clone();
             self.advance();
+            let superclass = if match_token!(self, Less).is_some() {
+                let superclass_location = self.peek().location;
+                if let Identifier(name) = &self.peek().token_type {
+                    let name = Name::new(name.clone());
+                    self.advance();
+                    Some(NameExpr {
+                        name,
+                        location: superclass_location,
+                        src: self.src.clone(),
+                    })
+                } else {
+                    Err(ExpectedSuperclass {
+                        src: self.src.clone(),
+                        location: superclass_location,
+                    })?
+                }
+            } else {
+                None
+            };
             consume!(self, LeftBrace, |t: &Token| {
                 ExpectedLeftBrace {
                     src: t.src.clone(),
@@ -120,7 +140,13 @@ impl Parser {
                 }
             });
             let location = class_location.until(right_brace.location);
-            Ok(Stmt::class(name, methods, location, self.src.clone()))
+            Ok(Stmt::class(
+                name,
+                methods,
+                superclass,
+                location,
+                self.src.clone(),
+            ))
         } else {
             Err(ExpectedIdentifier {
                 src: self.src.clone(),

@@ -1,6 +1,8 @@
 #[derive(Debug, strum::Display)]
 pub enum Type {
-    Callable,
+    Function,
+    NativeFunction,
+    Class,
     Instance,
     String,
     Number,

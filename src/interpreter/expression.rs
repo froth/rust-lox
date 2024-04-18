@@ -21,12 +21,12 @@ impl Interpreter {
             Grouping(expr) => self.interpret_expr(expr),
             Literal(l) => l.interpret(),
             Unary(token, expr) => self.interpret_unary(token, expr),
-            Variable(name) => self.read_variable(name, expr),
+            Variable(name) => self.read_variable(name),
             Assign(name, expr) => self.assign_variable(name, expr),
             Call(callee, arguments) => self.call(callee, arguments, expr.location),
             Get(object, name) => self.get(object, name, location),
             Set(object, name, value) => self.set(object, name, value, location),
-            This => self.read_variable(&NameExpr::this(location, expr.src.clone()), expr),
+            This => self.read_variable(&NameExpr::this(location, expr.src.clone())),
         }
     }
 
@@ -68,7 +68,7 @@ impl Interpreter {
         }
     }
 
-    fn read_variable(&self, name: &NameExpr, expr: &Expr) -> Result<Value> {
+    pub fn read_variable(&self, name: &NameExpr) -> Result<Value> {
         let val = if let Some(distance) = self.locals.get(name) {
             self.environment.borrow().get_at(*distance, &name.name)
         } else {
@@ -76,8 +76,8 @@ impl Interpreter {
         };
         val.ok_or(UndefinedVariable {
             name: name.name.clone(),
-            src: expr.src.clone(),
-            location: expr.location,
+            src: name.src.clone(),
+            location: name.location,
         })
     }
 

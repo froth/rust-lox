@@ -93,6 +93,13 @@ pub enum ParserError {
         #[label("this one is one too many")]
         location: SourceSpan,
     },
+    #[error("Expected superclass name")]
+    ExpectedSuperclass {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("not an identifier")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Diagnostic)]

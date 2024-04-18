@@ -23,7 +23,9 @@ impl Value {
 
     pub fn get_type(&self) -> Type {
         match self {
-            Value::Callable(_) => Type::Callable,
+            Value::Callable(Callable::Function(_)) => Type::Function,
+            Value::Callable(Callable::Native(_)) => Type::NativeFunction,
+            Value::Callable(Callable::Class(_)) => Type::Class,
             Value::Instance(_) => Type::Instance,
             Value::String(_) => Type::String,
             Value::Number(_) => Type::Number,
