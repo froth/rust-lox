@@ -197,9 +197,9 @@ impl Display for Stmt {
             } => {
                 write!(f, "class {}", name)?;
                 if let Some(superclass) = superclass {
-                    write!(f, "< {}", superclass.name)?;
+                    write!(f, " < {}", superclass.name)?;
                 }
-                writeln!(f, "{{")?;
+                writeln!(f, " {{")?;
                 methods.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
             }

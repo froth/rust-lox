@@ -295,7 +295,22 @@ mod test {
         let stmt = parse_declaration(tokens).unwrap();
         assert_eq!(
             stmt.to_string().trim_end(),
-            "class class_name{\nfun method_name() {\nExpr(nil)\n}\n}"
+            "class class_name {\nfun method_name() {\nExpr(nil)\n}\n}"
         )
+    }
+
+    #[test]
+    fn parse_superclass() {
+        let tokens = vec![
+            token(TokenType::Class),
+            token(TokenType::Identifier("A".into())),
+            token(TokenType::Less),
+            token(TokenType::Identifier("B".into())),
+            token(TokenType::LeftBrace),
+            token(TokenType::RightBrace),
+            token(TokenType::Eof),
+        ];
+        let stmt = parse_declaration(tokens).unwrap();
+        assert_eq!(stmt.to_string().trim_end(), "class A < B {\n}")
     }
 }
