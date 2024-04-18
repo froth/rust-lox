@@ -99,6 +99,15 @@ pub enum RuntimeError {
         #[label("here")]
         location: SourceSpan,
     },
+
+    #[error("Superclass was not a class but {actual}")]
+    InvalidSuperclass {
+        actual: Type,
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
 }
 
 #[derive(Debug)]

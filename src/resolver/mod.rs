@@ -86,7 +86,11 @@ impl Resolver {
                 self.resolve_expr(condition)?;
                 self.resolve_statement(body)
             }
-            Class { name, methods } => self.resolve_class(name, methods),
+            Class {
+                name,
+                methods,
+                superclass,
+            } => self.resolve_class(name, methods, superclass),
         }
     }
 
@@ -122,10 +126,27 @@ impl Resolver {
         Ok(())
     }
 
-    fn resolve_class(&mut self, name: &Name, methods: &[Function]) -> Result<()> {
+    fn resolve_class(
+        &mut self,
+        name: &Name,
+        methods: &[Function],
+        superclass: &Option<NameExpr>,
+    ) -> Result<()> {
         let enclosing_class = std::mem::replace(&mut self.current_class, Some(ClassType::Class));
         self.declare(name);
         self.define(name);
+
+        if let Some(superclass) = superclass {
+            if superclass.name == *name {
+                return Err(ResolutionError::SelfInheritance {
+                    src: superclass.src.clone(),
+                    location: superclass.location,
+                });
+            } else {
+                self.resolve_local(superclass)
+            }
+        }
+
         self.begin_scope();
 
         self.define(&Name::this());

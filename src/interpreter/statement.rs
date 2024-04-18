@@ -2,13 +2,18 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::ast::{
     expr::Expr,
-    name::Name,
+    name::{Name, NameExpr},
     stmt::{self, Stmt, StmtType},
 };
 
 use super::{
-    callable::Callable, class::Class, environment::Environment, function::Function,
-    runtime_error::RuntimeErrorOrReturn, value::Value, Interpreter, OrReturnResult, Result,
+    callable::Callable,
+    class::Class,
+    environment::Environment,
+    function::Function,
+    runtime_error::{RuntimeError, RuntimeErrorOrReturn},
+    value::Value,
+    Interpreter, OrReturnResult, Result,
 };
 
 impl Interpreter {
@@ -37,7 +42,11 @@ impl Interpreter {
                 self.define_function(&function.name, &function.parameters, &function.body)?
             }
             Return(expr) => self.execute_return(expr)?,
-            Class { name, methods } => self.define_class(name, methods)?,
+            Class {
+                name,
+                methods,
+                superclass,
+            } => self.define_class(name, methods, superclass)?,
         };
         Ok(())
     }
@@ -64,9 +73,30 @@ impl Interpreter {
         Ok(())
     }
 
-    fn define_class(&mut self, name: &Name, methods: &[stmt::Function]) -> Result<()> {
-        let mut env = self.environment.borrow_mut();
+    fn define_class(
+        &mut self,
+        name: &Name,
+        methods: &[stmt::Function],
+        superclass: &Option<NameExpr>,
+    ) -> Result<()> {
+        let superclass = superclass
+            .as_ref()
+            .map(|s| {
+                self.read_variable(s).and_then(|value| {
+                    if let Value::Callable(Callable::Class(class)) = value {
+                        Ok(class)
+                    } else {
+                        Err(RuntimeError::InvalidSuperclass {
+                            actual: value.get_type(),
+                            src: s.src.clone(),
+                            location: s.location,
+                        })
+                    }
+                })
+            })
+            .transpose()?;
 
+        let mut env = self.environment.borrow_mut();
         env.define(name, Value::Nil);
         let methods = methods
             .iter()
@@ -83,7 +113,7 @@ impl Interpreter {
                 )
             })
             .collect();
-        let class = Callable::Class(Class::new(name.clone(), methods));
+        let class = Callable::Class(Class::new(name.clone(), superclass, methods));
         env.assign(name, &Value::Callable(class));
         Ok(())
     }

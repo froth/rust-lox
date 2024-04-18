@@ -1,0 +1,22 @@
+error
+class A < A {}
+----
+----
+{
+  "causes": [],
+  "filename": "tests/resolver_errors/self_inheritance.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 1,
+        "offset": 10
+      }
+    }
+  ],
+  "message": "A class can't inherit from itself",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

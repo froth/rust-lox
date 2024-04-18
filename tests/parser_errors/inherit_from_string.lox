@@ -1,0 +1,30 @@
+error
+class A < "" {}
+----
+----
+{
+  "causes": [],
+  "labels": [],
+  "message": "Errors while parsing",
+  "related": [
+    {
+      "causes": [],
+      "filename": "tests/parser_errors/inherit_from_string.lox",
+      "labels": [
+        {
+          "label": "not an identifier",
+          "span": {
+            "length": 2,
+            "offset": 10
+          }
+        }
+      ],
+      "message": "Expected superclass name",
+      "related": [],
+      "severity": "error"
+    }
+  ],
+  "severity": "error"
+}
+----
+---- (no newline)

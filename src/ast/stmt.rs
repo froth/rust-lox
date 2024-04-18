@@ -2,7 +2,10 @@ use std::{fmt::Display, sync::Arc};
 
 use miette::{NamedSource, SourceSpan};
 
-use super::{expr::Expr, name::Name};
+use super::{
+    expr::Expr,
+    name::{Name, NameExpr},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Stmt {
@@ -48,6 +51,7 @@ impl Stmt {
     pub fn class(
         name: String,
         methods: Vec<Function>,
+        superclass: Option<NameExpr>,
         location: SourceSpan,
         src: Arc<NamedSource<String>>,
     ) -> Self {
@@ -55,6 +59,7 @@ impl Stmt {
             stmt_type: StmtType::Class {
                 name: name.into(),
                 methods,
+                superclass,
             },
             src,
             location,
@@ -115,6 +120,7 @@ pub enum StmtType {
     Class {
         name: Name,
         methods: Vec<Function>,
+        superclass: Option<NameExpr>,
     },
 }
 
@@ -184,9 +190,16 @@ impl Display for Stmt {
             Function(function) => write!(f, "{function}"),
             Return(None) => writeln!(f, "return"),
             Return(Some(expr)) => writeln!(f, "return {expr}"),
-            Class { name, methods } => {
+            Class {
+                name,
+                methods,
+                superclass,
+            } => {
                 write!(f, "class {}", name)?;
-                writeln!(f, "{{")?;
+                if let Some(superclass) = superclass {
+                    write!(f, " < {}", superclass.name)?;
+                }
+                writeln!(f, " {{")?;
                 methods.iter().try_for_each(|s| write!(f, "{}", s))?;
                 writeln!(f, "}}")
             }
