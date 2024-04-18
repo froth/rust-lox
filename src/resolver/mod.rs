@@ -29,6 +29,7 @@ enum FunctionType {
 #[derive(Debug)]
 enum ClassType {
     Class,
+    Subclass,
 }
 
 type Result<T> = std::result::Result<T, ResolutionError>;

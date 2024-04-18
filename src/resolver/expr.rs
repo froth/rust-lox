@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use miette::{NamedSource, SourceSpan};
 
-use super::{resolution_error::ResolutionError, Resolver, Result};
+use super::{resolution_error::ResolutionError, ClassType, Resolver, Result};
 use crate::ast::{
     expr::{Expr, ExprType::*},
     name::NameExpr,
@@ -73,15 +73,21 @@ impl Resolver {
         location: SourceSpan,
         src: &Arc<NamedSource<String>>,
     ) -> Result<()> {
-        // if self.current_class.is_none() {
-        //     Err(ResolutionError::InvalidThis {
-        //         src: src.clone(),
-        //         location,
-        //     })
-        // } else {
-        let name_expr = NameExpr::super_name(location, src.clone());
-        self.resolve_local(&name_expr);
-        Ok(())
-        // }
+        use ResolutionError::*;
+        match self.current_class {
+            None => Err(SuperOutsideClass {
+                src: src.clone(),
+                location,
+            }),
+            Some(ClassType::Class) => Err(SuperWithoutSuperclass {
+                src: src.clone(),
+                location,
+            }),
+            Some(ClassType::Subclass) => {
+                let name_expr = NameExpr::super_name(location, src.clone());
+                self.resolve_local(&name_expr);
+                Ok(())
+            }
+        }
     }
 }

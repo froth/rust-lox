@@ -42,4 +42,20 @@ pub enum ResolutionError {
         #[label("here")]
         location: SourceSpan,
     },
+
+    #[error("Can't use 'super' outside of a class.")]
+    SuperOutsideClass {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
+
+    #[error("Can't use 'super' in a class with no superclass")]
+    SuperWithoutSuperclass {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
 }

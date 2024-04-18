@@ -74,7 +74,12 @@ impl Resolver {
         methods: &[Function],
         superclass: &Option<NameExpr>,
     ) -> Result<()> {
-        let enclosing_class = std::mem::replace(&mut self.current_class, Some(ClassType::Class));
+        let class_type = if superclass.is_some() {
+            ClassType::Subclass
+        } else {
+            ClassType::Class
+        };
+        let enclosing_class = std::mem::replace(&mut self.current_class, Some(class_type));
         self.declare(name);
         self.define(name);
 

@@ -1,0 +1,26 @@
+error
+class A {
+    method() {
+        super.x();
+    }
+}
+----
+----
+{
+  "causes": [],
+  "filename": "tests/resolver_errors/super_without_superclass.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 7,
+        "offset": 33
+      }
+    }
+  ],
+  "message": "Can't use 'super' in a class with no superclass",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)
