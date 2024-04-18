@@ -38,6 +38,7 @@ impl Resolver {
                 self.resolve_expr(object)
             }
             This => self.resolve_this(expression.location, &expression.src),
+            Super(_) => self.resolve_super(expression.location, &expression.src),
         }
     }
 
@@ -65,5 +66,22 @@ impl Resolver {
             self.resolve_local(&name_expr);
             Ok(())
         }
+    }
+
+    fn resolve_super(
+        &mut self,
+        location: SourceSpan,
+        src: &Arc<NamedSource<String>>,
+    ) -> Result<()> {
+        // if self.current_class.is_none() {
+        //     Err(ResolutionError::InvalidThis {
+        //         src: src.clone(),
+        //         location,
+        //     })
+        // } else {
+        let name_expr = NameExpr::super_name(location, src.clone());
+        self.resolve_local(&name_expr);
+        Ok(())
+        // }
     }
 }

@@ -115,6 +115,7 @@ impl Display for Expr {
             Get(object, name) => write!(f, "(Get {}.{})", object, name.name),
             Set(object, name, value) => write!(f, "(Set {}.{} = {})", object, name.name, value),
             This => write!(f, "this"),
+            Super(method) => write!(f, "(super.{})", method.name),
         }
     }
 }
@@ -132,6 +133,7 @@ pub enum ExprType {
     Get(Box<Expr>, NameExpr),
     Set(Box<Expr>, NameExpr, Box<Expr>),
     This,
+    Super(NameExpr),
 }
 
 impl ExprType {

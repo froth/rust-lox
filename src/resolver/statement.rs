@@ -89,6 +89,12 @@ impl Resolver {
             }
         }
 
+        if superclass.is_some() {
+            self.begin_scope();
+            let scope = self.scopes.last_mut().expect("scope declared above");
+            scope.insert(Name::super_name(), true);
+        }
+
         self.begin_scope();
 
         self.define(&Name::this());
@@ -101,6 +107,11 @@ impl Resolver {
             self.resolve_function(&m.parameters, &m.body, function_type)
         })?;
         self.end_scope();
+
+        if superclass.is_some() {
+            self.end_scope();
+        }
+
         self.current_class = enclosing_class;
         Ok(())
     }

@@ -96,8 +96,17 @@ impl Interpreter {
             })
             .transpose()?;
 
-        let mut env = self.environment.borrow_mut();
-        env.define(name, Value::Nil);
+        self.environment.borrow_mut().define(name, Value::Nil);
+
+        if let Some(superclass) = &superclass {
+            let mut local_env = Environment::from_parent(self.environment.clone());
+            local_env.define(
+                &Name::super_name(),
+                Value::Callable(Callable::Class(superclass.clone())),
+            );
+            self.environment = Rc::new(RefCell::new(local_env))
+        }
+
         let methods = methods
             .iter()
             .map(|m| {
@@ -113,8 +122,22 @@ impl Interpreter {
                 )
             })
             .collect();
-        let class = Callable::Class(Class::new(name.clone(), superclass, methods));
-        env.assign(name, &Value::Callable(class));
+        let class = Callable::Class(Class::new(name.clone(), superclass.clone(), methods));
+
+        if superclass.is_some() {
+            let parent = self
+                .environment
+                .borrow()
+                .parent
+                .as_ref()
+                .expect("created above")
+                .clone();
+            self.environment = parent;
+        }
+
+        self.environment
+            .borrow_mut()
+            .assign(name, &Value::Callable(class));
         Ok(())
     }
 

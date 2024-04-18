@@ -38,6 +38,7 @@ impl Resolver {
         let mut resolver = Resolver::default();
         resolver.resolve_statements(statements)?;
         if verbose {
+            eprintln!("Locals:");
             eprintln!("{:?}", resolver.locals);
         }
         Ok(resolver.locals)
