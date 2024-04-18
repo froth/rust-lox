@@ -1,3 +1,5 @@
-Rust implementation of a Lox interpreter.
+Rust implementation of a tree-walk interpreter for Lox.
 
-Basically me rusting through http://craftinginterpreters.com/
+Feature complete reimplementation of jlox in Rust with some minor changes and additions.
+
+Basically me rusting through Part II of http://craftinginterpreters.com/
