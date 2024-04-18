@@ -1,13 +1,17 @@
 use miette::SourceSpan;
 
-use crate::ast::{
-    expr::{Expr, ExprType},
-    name::NameExpr,
-    token::{Token, TokenType},
+use crate::{
+    ast::{
+        expr::{Expr, ExprType},
+        name::{Name, NameExpr},
+        token::{Token, TokenType},
+    },
+    interpreter::runtime_error::RuntimeError,
 };
 
 use super::{
-    literal::LiteralInterpreter, runtime_error::RuntimeError::*, types::Type, value::Value,
+    callable::Callable, literal::LiteralInterpreter, runtime_error::RuntimeError::*, types::Type,
+    value::Value,
 };
 use super::{Interpreter, Result};
 
@@ -27,6 +31,7 @@ impl Interpreter {
             Get(object, name) => self.get(object, name, location),
             Set(object, name, value) => self.set(object, name, value, location),
             This => self.read_variable(&NameExpr::this(location, expr.src.clone())),
+            Super(method) => self.interpret_super(method, location),
         }
     }
 
@@ -123,6 +128,48 @@ impl Interpreter {
                 actual: callee_value.get_type(),
                 src: callee.src.clone(),
                 location: callee.location,
+            })
+        }
+    }
+
+    fn interpret_super(&mut self, method_expr: &NameExpr, location: SourceSpan) -> Result<Value> {
+        let distance = self
+            .locals
+            .get(&NameExpr {
+                name: Name::super_name(),
+                location,
+                src: method_expr.src.clone(),
+            })
+            .expect("super local was undefined bug in resolver");
+        let superclass = self
+            .environment
+            .borrow()
+            .get_at(*distance, &Name::super_name())
+            .expect("super value not in environment: bug in interpreter");
+        let superclass = if let Value::Callable(Callable::Class(class)) = superclass {
+            class
+        } else {
+            panic!("super value not a class: bug in interpreter");
+        };
+        let object = self
+            .environment
+            .borrow()
+            .get_at(distance - 1, &Name::this())
+            .expect("object in super call was not in environment: bug in interpreter");
+        let object = if let Value::Instance(instance) = object {
+            instance
+        } else {
+            panic!("object value not an instance: bug in interpreter");
+        };
+        let method = superclass.find_method(&method_expr.name);
+        let method_name = method_expr.name.clone();
+        if let Some(method) = method {
+            Ok(Value::Callable(Callable::Function(method.bind(&object))))
+        } else {
+            Err(RuntimeError::UndefinedProperty {
+                name: method_name,
+                src: method_expr.src.clone(),
+                location: method_expr.location,
             })
         }
     }

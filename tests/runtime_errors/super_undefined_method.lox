@@ -1,0 +1,32 @@
+error
+class A {
+}
+
+class B < A {
+  test() {
+    super.method();
+  }
+}
+
+
+B().test();
+----
+----
+{
+  "causes": [],
+  "filename": "tests/runtime_errors/super_undefined_method.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 6,
+        "offset": 48
+      }
+    }
+  ],
+  "message": "Undefined property method",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

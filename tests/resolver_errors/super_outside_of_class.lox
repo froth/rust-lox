@@ -1,0 +1,22 @@
+error
+super.a();
+----
+----
+{
+  "causes": [],
+  "filename": "tests/resolver_errors/super_outside_of_class.lox",
+  "labels": [
+    {
+      "label": "here",
+      "span": {
+        "length": 7,
+        "offset": 0
+      }
+    }
+  ],
+  "message": "Can't use 'super' outside of a class.",
+  "related": [],
+  "severity": "error"
+}
+----
+---- (no newline)

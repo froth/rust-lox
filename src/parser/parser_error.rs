@@ -70,6 +70,14 @@ pub enum ParserError {
         location: SourceSpan,
     },
 
+    #[error("Expected '.'")]
+    ExpectedDot {
+        #[source_code]
+        src: Arc<NamedSource<String>>,
+        #[label("here")]
+        location: SourceSpan,
+    },
+
     #[error("Invalid assignment target")]
     InvalidAssignmentTarget {
         #[source_code]

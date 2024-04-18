@@ -1,3 +1,5 @@
+use miette::SourceSpan;
+
 use crate::ast::expr::Expr;
 use crate::ast::literal::Literal;
 use crate::ast::name::{Name, NameExpr};
@@ -208,6 +210,7 @@ impl Parser {
                 location: token.location,
                 src: self.src.clone(),
             },
+            Super => self.parse_super(token.location)?,
             Eof => Err(UnexpectedEof {
                 src: token.src.clone(),
                 location: (
@@ -222,6 +225,37 @@ impl Parser {
             })?,
         };
         Ok(expr)
+    }
+
+    fn parse_super(&mut self, super_location: SourceSpan) -> Result<Expr> {
+        consume!(self, TokenType::Dot, |t: &Token| {
+            ExpectedDot {
+                src: t.src.clone(),
+                location: self.previous_if_eof(t.location),
+            }
+        });
+
+        let method = if let TokenType::Identifier(name) = &self.peek().token_type {
+            let location = self.peek().location;
+            let name = name.clone().into();
+            self.advance();
+            NameExpr {
+                name,
+                location,
+                src: self.src.clone(),
+            }
+        } else {
+            return Err(ExpectedIdentifier {
+                src: self.src.clone(),
+                location: self.peek().location,
+            });
+        };
+        let location = super_location.until(method.location);
+        Ok(Expr {
+            expr_type: ExprType::Super(method),
+            location,
+            src: self.src.clone(),
+        })
     }
 }
 
@@ -448,5 +482,18 @@ mod test {
             expr.to_string().trim_end(),
             "(Set (variable object).name = (true))"
         )
+    }
+
+    #[test]
+    fn parse_super() {
+        let name: String = "name".into();
+        let tokens = vec![
+            token(TokenType::Super),
+            token(TokenType::Dot),
+            token(TokenType::Identifier(name.clone())),
+            token(TokenType::Eof),
+        ];
+        let expr = parse_expr(tokens).unwrap();
+        assert_eq!(expr.to_string().trim_end(), "(super.name)")
     }
 }

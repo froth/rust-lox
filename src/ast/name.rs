@@ -19,6 +19,14 @@ impl NameExpr {
             src: src.clone(),
         }
     }
+
+    pub fn super_name(location: SourceSpan, src: Arc<NamedSource<String>>) -> Self {
+        NameExpr {
+            name: Name::super_name(),
+            location,
+            src: src.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -31,6 +39,10 @@ impl Name {
 
     pub fn this() -> Self {
         Name(TokenType::This.to_string())
+    }
+
+    pub fn super_name() -> Self {
+        Name(TokenType::Super.to_string())
     }
 
     pub fn init() -> Self {
