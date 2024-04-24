@@ -1,6 +1,7 @@
 use miette::NamedSource;
 
 use crate::{
+    graphviz_converter,
     interpreter::{value::Value, Interpreter},
     parser::{parser_error::ParserError::ExpectedSemicolon, Parser},
     resolver::Resolver,
@@ -10,13 +11,15 @@ use crate::{
 pub struct Lox {
     interpreter: Interpreter,
     verbose: bool,
+    graphviz: bool,
 }
 
 impl Lox {
-    pub fn new(verbose: bool) -> Self {
+    pub fn new(verbose: bool, graphviz: bool) -> Self {
         Self {
             interpreter: Interpreter::new(),
             verbose,
+            graphviz,
         }
     }
 
@@ -25,7 +28,11 @@ impl Lox {
         let statements = Parser::parse(tokens, self.verbose)?;
         let locals = Resolver::resolve(&statements, self.verbose)?;
         self.interpreter.add_locals(locals);
-        self.interpreter.interpret(&statements)?;
+        if self.graphviz {
+            graphviz_converter::print_graphviz(statements);
+        } else {
+            self.interpreter.interpret(&statements)?;
+        }
         Ok(())
     }
 
@@ -80,6 +87,7 @@ mod lox_tests {
             Self {
                 interpreter: Interpreter::from_printer(printer),
                 verbose: false,
+                graphviz: false,
             }
         }
     }
