@@ -50,7 +50,7 @@ pub fn print_graphviz(statements: Vec<Stmt>) {
 }
 
 fn to_graphviz(statements: Vec<Stmt>) -> Graph {
-    let nodes = statements
+    let mut nodes: Vec<GVStmt> = statements
         .iter()
         .map(|s| {
             let mut stmts = s.to_graphviz().stmts;
@@ -58,6 +58,7 @@ fn to_graphviz(statements: Vec<Stmt>) -> Graph {
             subgraph!(esc random_cluster_id(), stmts).into()
         })
         .collect();
+    nodes.push(attr!("nodesep", ".6").into());
     Graph::DiGraph {
         id: id!("id"),
         strict: true,

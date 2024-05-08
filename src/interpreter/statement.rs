@@ -36,7 +36,7 @@ impl Interpreter {
                 condition,
                 then_stmt,
                 else_stmt,
-            } => self.execute_if(condition, then_stmt, else_stmt)?,
+            } => self.execute_if(condition, then_stmt, else_stmt.as_deref())?,
             While { condition, body } => self.execute_while(condition, body.as_ref())?,
             Function(function) => {
                 self.define_function(&function.name, &function.parameters, &function.body)?
@@ -157,12 +157,12 @@ impl Interpreter {
         &mut self,
         condition: &Expr,
         then_stmt: &Stmt,
-        else_stmt: &Option<Box<Stmt>>,
+        else_stmt: Option<&Stmt>,
     ) -> OrReturnResult<()> {
         if self.interpret_expr(condition)?.is_truthy() {
             self.interpret_stmt(then_stmt)?;
         } else if let Some(else_stmt) = else_stmt {
-            self.interpret_stmt(else_stmt.as_ref())?;
+            self.interpret_stmt(else_stmt)?;
         }
         Ok(())
     }
