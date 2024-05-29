@@ -1,5 +1,6 @@
 mod args;
 mod ast;
+mod graphviz_converter;
 mod interpreter;
 mod lox;
 mod parser;
@@ -21,7 +22,11 @@ use rustyline::{
 
 fn main() {
     let args = Args::parse();
-    let lox = Lox::new(args.verbose);
+    if args.file.is_none() && args.graphviz {
+        eprintln!("graphviz works only with input file");
+        std::process::exit(5)
+    }
+    let lox = Lox::new(args.verbose, args.graphviz);
     let result = match args.file {
         Some(file) => run_file(lox, file),
         None => run_prompt(lox, args).into_diagnostic(),
