@@ -10,7 +10,7 @@ description = "An interpreter for the Lox language (http://craftinginterpreters.
 clap = { version = "4.5.4", features = ["derive", "env", "string"] }
 miette = { version = "7.2.0", features = ["fancy", "syntect-highlighter"] }
 phf = { version = "0.11.2", features = ["macros"] }
-thiserror = "1.0.58"
+thiserror = "1.0.61"
 strum = { version = "0.26", features = ["derive"] }
 rustyline = {version= "14.0.0", features = ["with-file-history", "derive"]}
 directories = "5.0.1"
